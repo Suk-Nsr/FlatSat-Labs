@@ -25,7 +25,8 @@ void setup() {
   Serial.setRx(PD9);
   Serial.setTx(PD8);
   Serial.begin(115200);
-  delay(2000);
+  
+  while (!Serial){;}
 
   Serial.println("\n=== FlatSat Flight Recorder Booting ===");
 

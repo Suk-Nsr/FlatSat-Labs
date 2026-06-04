@@ -14,7 +14,8 @@ void setup() {
   Serial.setRx(PD9);
   Serial.setTx(PD8);
   Serial.begin(115200);
-  delay(2000); 
+  
+  while (!Serial){;}
   
   I2C_EPS.begin();
   Wire.setSDA(PB9);

@@ -11,7 +11,8 @@ void setup() {
 
   // TODO 1 (FILLED)
   Serial.begin(115200);
-  delay(2000); 
+  
+  while (!Serial){;}
 
   // TODO 2 (FILLED)
   bootMessage = "OBC Initialized. System Booting...";
