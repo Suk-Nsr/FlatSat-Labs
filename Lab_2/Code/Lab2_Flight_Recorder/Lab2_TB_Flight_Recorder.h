@@ -1,0 +1,57 @@
+/*
+ * NBSPACE Labs: FlatSat Learning Set
+ * Lab 2.1: Built-In Self-Test (BIST) Engine
+ */
+
+#ifndef LAB2_TB_FLIGHT_RECORDER_H
+#define LAB2_TB_FLIGHT_RECORDER_H
+
+// This testbench validates the student variables directly to ensure no cheating or hardcoding
+void runFlightRecorderTestbench(Adafruit_SPIFlash& flashObj, uint32_t studentId, uint8_t studentCount) {
+  Serial.println("\n--- Running BIST (Flight Recorder Test) ---");
+  bool isPassed = true;
+
+  // Test 1: Hardware Integrity Check (Validates what the student captured in TODO 1)
+  if (studentId == 0 || studentId == 0xFFFFFF) {
+    Serial.println("❌ [FAIL] Hardware Check: Variable 'jedecId' is empty or invalid!");
+    Serial.println("   * Hint: Did you assign flashObj.getJEDECID() to 'jedecId' in TODO 1?");
+    isPassed = false;
+  } else {
+    Serial.println("✅ [PASS] Hardware Check: Student successfully grabbed W25Q128 JEDEC ID.");
+  }
+
+  // Test 2: Data Integrity Check (Validates student write operation in TODO 5)
+  uint8_t physicalCount = 0;
+  flashObj.readBuffer(0x0000, &physicalCount, 1);
+  
+  if (physicalCount != studentCount) {
+    Serial.println("❌ [FAIL] Integrity Check: Expected boot count " + String(studentCount) + " but read " + String(physicalCount) + " from IC.");
+    Serial.println("   * Hint: Did you execute flashObj.writeBuffer() correctly in TODO 5?");
+    isPassed = false;
+  } else {
+    Serial.println("✅ [PASS] Integrity Check: Boot count value matched with physical Flash storage.");
+  }
+
+  // Test 3: Sector Erase Verification Check (Validates TODO 4)
+  uint8_t physicalEraseByte = 0;
+  flashObj.readBuffer(0x0001, &physicalEraseByte, 1);
+  
+  // If the student skipped TODO 4, this byte will still be 0x00 (Injected Sabotage)
+  if (physicalEraseByte != 0xFF) {
+    Serial.println("❌ [FAIL] Erase Check: Adjacent address 0x0001 is dirty (0x" + String(physicalEraseByte, HEX) + ")!");
+    Serial.println("   * Hint: You MUST clear the sector using flashObj.eraseSector(0) before writing data!");
+    isPassed = false;
+  } else {
+    Serial.println("✅ [PASS] Erase Check: Sector 0 formatting verified (Dirty byte successfully cleared).");
+  }
+
+  // System Mission Evaluation
+  if (isPassed) {
+    Serial.println("🌟 [SYSTEM READY] Flight Recorder subsystem is fully operational.");
+  } else {
+    Serial.println("⚠️ [SYSTEM WARNING] Flight Recorder malfunction. Critical logic error found.");
+  }
+  Serial.println("-------------------------------------------\n");
+}
+
+#endif // LAB2_TB_FLIGHT_RECORDER_H
