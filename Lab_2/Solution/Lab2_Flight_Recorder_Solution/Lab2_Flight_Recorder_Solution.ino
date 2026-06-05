@@ -27,7 +27,7 @@ void setup() {
   Serial.println("\n=== FlatSat Flight Recorder Booting ===");
 
   if (!flash.begin()) {
-    Serial.println("❌ CRITICAL ERROR: SPI Flash Hardware not responding!");
+    Serial.println(" 🔴 CRITICAL ERROR: SPI Flash Hardware not responding!");
     while (1);
   }
 
