@@ -26,21 +26,29 @@ The FlatSat platform features fully modular segments integrated through a standa
 
 The curriculum guides students step-by-step from fundamental I/O operations through system resiliency, culminating in a fully autonomous orbit simulation:
 
-* **Lab 1: OBC Initialization & I2C Subsystems** * *Core Tasks:* Establish Serial Debugging interfaces and execute an I2C bus scanner to find online physical addresses.
+* **Lab 1: OBC Initialization & I2C Subsystems**
+   * *Core Tasks:* Establish Serial Debugging interfaces and execute an I2C bus scanner to find online physical addresses.
     * *Application:* Extract real-time metrics from the RTC (PCF85063TP) and temperature sensor (TMP102), printing them as a single inline data stream to implement mandatory timestamping habits.
-* **Lab 2: Data Storage & Memory Management** * *Core Tasks:* Map memory bounds and read JEDEC parameters from the SPI Flash (W25Q128) while testing basic read/write sectors.
+* **Lab 2: Data Storage & Memory Management**
+   * *Core Tasks:* Map memory bounds and read JEDEC parameters from the SPI Flash (W25Q128) while testing basic read/write sectors.
     * *Application:* Program a sector dump routine to mirror internal flash structures directly into a structured backup archive (`Backup.txt`) inside the Micro SD Card, validating integrity via physical inspection.
-* **Lab 3: EPS Power Management & Safe Mode** * *Core Tasks:* Fetch power consumption telemetry from INA226 nodes and handle low-level subsystem toggles via hardware GPIO configurations (PD1–PD3).
+* **Lab 3: EPS Power Management & Safe Mode**
+   * *Core Tasks:* Fetch power consumption telemetry from INA226 nodes and handle low-level subsystem toggles via hardware GPIO configurations (PD1–PD3).
     * *Application:* Write an autonomous `SafeMode()` routine. If the simulated battery drop hits sub-30%, trigger structural load-shedding by killing payload/radio rails. Restore standard operations once charging clears a 70% hysteresis barrier.
-* **Lab 4: RF Communication & Telemetry Protocol** * *Core Tasks:* Conduct basic antenna diagnostics (S11 and VSWR matching) and interface the RFM98PW LoRa transceiver.
+* **Lab 4: RF Communication & Telemetry Protocol**
+   * *Core Tasks:* Conduct basic antenna diagnostics (S11 and VSWR matching) and interface the RFM98PW LoRa transceiver.
     * *Application:* Design a rigid data telemetry packet structure: `[Header][Timestamp][Battery %][Temp][Checksum]`. Encapsulate binary frames using the KISS protocol and verify reception on the Ground Station. Handle flag warnings if a checksum validation fails.
-* **Lab 5: Payload Integration & Metadata** * *Core Tasks:* Decode NMEA sentences from GPS modules via auxiliary serial lines and synchronize external camera capture routines.
+* **Lab 5: Payload Integration & Metadata**
+   * *Core Tasks:* Decode NMEA sentences from GPS modules via auxiliary serial lines and synchronize external camera capture routines.
     * *Application:* Fire an image capture command, pull active time-stamps from the RTC and coordinates from the GPS, and embed them directly as geo-location payload metadata into an SD storage entry.
-* **Lab 6: Resilient Downlink & Chunk Transfer** * *Core Tasks:* Segment binary picture records on the SD card into fixed-size transport chunks.
-    * *Application:* Implement a robust Store-and-Forward downlink. Simulate antenna disconnection or physical path failure mid-transfer. The satellite must register the link interruption, enter a holding state, and resume packet transmission seamlessly from the exact fail-point upon connection restoration.
-* **Lab 7: Orbital Constraints & Fault Tolerance** * *Application Task 1 (GPS-Gating):* Constrain radio activities to orbital windows. Build a software gating mechanism that keeps the COMMS rail disabled until the active GPS telemetry falls into preconfigured regional boundaries.
-    * *Application Task 2 (Watchdog Timer):* Configure the internal Independent Watchdog (IWDG) system. Simulate a Single Event Upset (SEU) radiation strike by forcing an infinite loop lockup. The hardware watchdog must automatically identify the freeze, force a full OBC reset, and bring the platform back online without human intervention.
-* **Lab 8: The Final Mission – "A Day in the Life"** * *Objective:* Evaluates structural system integration skills. Provided with zero starter code, students must apply everything learned from Labs 1 through 7 to construct a complete, autonomous Finite State Machine (FSM):
+* **Lab 6: Resilient Downlink & Chunk Transfer**
+  * *Core Tasks:* Segment binary picture records on the SD card into fixed-size transport chunks.
+  * *Application:* Implement a robust Store-and-Forward downlink. Simulate antenna disconnection or physical path failure mid-transfer. The satellite must register the link interruption, enter a holding state, and resume packet transmission seamlessly from the exact fail-point upon connection restoration.
+* **Lab 7: Orbital Constraints & Fault Tolerance**
+  * *Application Task 1 (GPS-Gating):* Constrain radio activities to orbital windows. Build a software gating mechanism that keeps the COMMS rail disabled until the active GPS telemetry falls into preconfigured regional boundaries.
+  * *Application Task 2 (Watchdog Timer):* Configure the internal Independent Watchdog (IWDG) system. Simulate a Single Event Upset (SEU) radiation strike by forcing an infinite loop lockup. The hardware watchdog must automatically identify the freeze, force a full OBC reset, and bring the platform back online without human intervention.
+* **Lab 8: The Final Mission – "A Day in the Life"**
+  * *Objective:* Evaluates structural system integration skills. Provided with zero starter code, students must apply everything learned from Labs 1 through 7 to construct a complete, autonomous Finite State Machine (FSM):
     * **State 1 (Boot):** Execute hardware health checks, read battery margins (verify Safe Mode status), and mount file systems.
     * **State 2 (Orbiting):** Keep radio systems completely silent; continually stream background telemetry and monitor GPS coordinates.
     * **State 3 (Target Acquired):** Upon entering target coordinate bounds -> Trigger camera payload -> Inject spatial metadata -> Log to SD card.
