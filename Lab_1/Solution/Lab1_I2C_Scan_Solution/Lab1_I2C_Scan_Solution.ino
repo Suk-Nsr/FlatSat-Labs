@@ -1,10 +1,13 @@
-/*
- * NBSPACE Labs: FlatSat Learning Set
- * Lab 1.2: Dual I2C Scanner (Solution Key)
- */
+
+// NBSPACE Labs: FlatSat Learning Set
+// Lab 1.2: Dual I2C Scanner 
+// (Solution Code)
 
 #include <Wire.h>
+#include "src/Lab1_TB_I2C_Scan.h"
 
+
+// TODO 1 (FILLED)
 TwoWire I2C_EPS(PF0, PF1);
 
 void setup() {
@@ -16,17 +19,16 @@ void setup() {
 
   Serial.println("\n--- FlatSat Dual I2C Scanner ---");
   
-  // TODO 1 (FILLED)
+  // TODO 2 (FILLED)
   I2C_EPS.begin();
 
+  // TODO 3 (FILLED)
   Wire.setSDA(PB9);
   Wire.setSCL(PB8);
   
-  // TODO 2 (FILLED)
+  // TODO 4 (FILLED)
   Wire.begin();
-}
 
-void loop() {
   byte error_eps, error_main, address;
   int eps_device_count = 0;
   int main_device_count = 0;
@@ -35,7 +37,7 @@ void loop() {
 
   Serial.println("Scanning both I2C Buses...");
 
-  // TODO 3 (FILLED)
+  // TODO 5 (FILLED)
   for (address = 1; address < 128; address++) {
     I2C_EPS.beginTransmission(address);
     error_eps = I2C_EPS.endTransmission();
@@ -59,7 +61,9 @@ void loop() {
       if (address == 0x51) foundRTC = true;
     }
   } 
+}
 
-  delay(5000); 
+void loop() {
+  
 }
   
