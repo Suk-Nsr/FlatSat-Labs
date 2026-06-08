@@ -6,7 +6,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include "testbench.h"
+#include "Lab3_TB_Power_Control.h"
 
 TwoWire I2C_EPS(PF0, PF1);
 
