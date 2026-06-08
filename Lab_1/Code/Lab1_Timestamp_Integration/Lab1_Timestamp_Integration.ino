@@ -6,7 +6,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <PCF85063TP.h> 
-#include "Lab1_TB_Timestamp_Integration.h"
+#include "src/Lab1_TB_Timestamp_Integration.h"
 
 TwoWire I2C_EPS(PF0, PF1);
 PCD85063TP rtc; 

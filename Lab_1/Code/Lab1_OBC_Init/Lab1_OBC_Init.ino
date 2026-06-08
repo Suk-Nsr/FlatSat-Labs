@@ -4,7 +4,7 @@
 // Objective: Learn how to initialize the OBC and I2C Subsystems
 
 
-#include "Lab1_TB_OBC_Init.h"
+#include "src/Lab1_TB_OBC_Init.h"
 
 // TODO 1: Find the UART pins for RX and TX from the FlatSat OBC Documentation.
 // Replace the placeholder values with the correct pin names (e.g., PA10, PB6, etc.).
