@@ -22,6 +22,7 @@ void setup() {
   Serial.setRx(PD9);
   Serial.setTx(PD8);
   Serial.begin(115200);
+
   while(!Serial){;}
 
   Serial.println("\n=== FlatSat Flight Recorder Booting ===");
@@ -32,7 +33,7 @@ void setup() {
   }
 
   // ====================================================================
-  // 🐛 FAULT INJECTION (Don't edit this section)
+  // TB PREPARATION (DO NOT MODIFY)
   // ====================================================================
   uint8_t dirtyByte = 0x00;
   flash.writeBuffer(0x0001, &dirtyByte, 1);
