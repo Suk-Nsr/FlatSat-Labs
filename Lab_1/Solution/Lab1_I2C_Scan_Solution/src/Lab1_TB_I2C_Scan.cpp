@@ -1,33 +1,41 @@
 #include "Lab1_TB_I2C_Scan.h"
 
-void runI2CScanTestbench(int eps_device_count, int main_device_count, bool foundTMP102, bool foundRTC) {
+void runI2CScanTestbench(bool eps_found[128], bool main_found[128]) {
   Serial.println("\n========================================");
   Serial.println("    VALIDATION TEST       ");
   Serial.println("========================================");
   
-  bool epsTestPassed = false;
-  bool mainTestPassed = false;
+  bool testPassed = true;
 
-  Serial.println("\n[TEST 1] Checking EPS Bus Devices...");
-  if (eps_device_count > 0 && foundTMP102) {
-    Serial.println(" 🟢 [PASS] Found devices on EPS Bus, including TMP102 (0x4A).");
-    epsTestPassed = true;
-  } else {
-    Serial.println(" 🔴 [FAIL] Missing expected devices on EPS Bus.");
-    if (!foundTMP102) Serial.println("     * Hint: TMP102 (0x4A) was not found. Check EPS I2C pins (PF0, PF1) and initialization.");
+  const byte expected_eps[] = {0x40, 0x41, 0x42, 0x43, 0x47, 0x48, 0x4A, 0x4B, 0x58, 0x59, 0x5A, 0x5B};
+  const byte expected_main[] = {0x49, 0x51};
+
+  Serial.println("\n[TEST 1] Checking All I2C Devices...");
+  
+  for (int i = 0; i < sizeof(expected_eps); i++) {
+    if (!eps_found[expected_eps[i]]) {
+      Serial.print(" 🔴 [FAIL] Missing expected device on EPS Bus at address 0x");
+      if (expected_eps[i] < 16) Serial.print("0");
+      Serial.println(expected_eps[i], HEX);
+      testPassed = false;
+    }
   }
 
-  Serial.println("\n[TEST 2] Checking Main Bus Devices...");
-  if (main_device_count > 0 && foundRTC) {
-    Serial.println(" 🟢 [PASS] Found devices on Main Bus, including RTC (0x51).");
-    mainTestPassed = true;
-  } else {
-    Serial.println(" 🔴 [FAIL] Missing expected devices on Main Bus.");
-    if (!foundRTC) Serial.println("     * Hint: RTC (0x51) was not found. Check Main I2C pins (PB9, PB8) and initialization.");
+  for (int i = 0; i < sizeof(expected_main); i++) {
+    if (!main_found[expected_main[i]]) {
+      Serial.print(" 🔴 [FAIL] Missing expected device on Main Bus at address 0x");
+      if (expected_main[i] < 16) Serial.print("0");
+      Serial.println(expected_main[i], HEX);
+      testPassed = false;
+    }
+  }
+
+  if (testPassed) {
+    Serial.println(" 🟢 [PASS] Found all expected devices on EPS and Main buses.");
   }
 
   Serial.println("\n========================================\n--- Test Summary ---");
-  if (epsTestPassed && mainTestPassed) {
+  if (testPassed) {
     Serial.println(" 🟢 VALIDATE PASS: Both I2C Buses are configured correctly!");
   } else {
     Serial.println(" 🔴 VALIDATE FAILED: Please fix the errors and try again.");

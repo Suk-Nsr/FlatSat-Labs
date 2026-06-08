@@ -30,10 +30,8 @@ void setup() {
   Wire.begin();
 
   byte error_eps, error_main, address;
-  int eps_device_count = 0;
-  int main_device_count = 0;
-  bool foundTMP102 = false;
-  bool foundRTC = false;
+  bool eps_found[128] = {false};
+  bool main_found[128] = {false};
 
   Serial.println("Scanning both I2C Buses...");
 
@@ -46,8 +44,7 @@ void setup() {
       Serial.print("Found device on [EPS Bus]  at address 0x");
       if (address < 16) Serial.print("0");
       Serial.println(address, HEX);
-      eps_device_count++;
-      if (address == 0x4A) foundTMP102 = true;
+      eps_found[address] = true;
     }
 
     Wire.beginTransmission(address);
@@ -57,10 +54,11 @@ void setup() {
       Serial.print("Found device on [Main Bus] at address 0x");
       if (address < 16) Serial.print("0");
       Serial.println(address, HEX);
-      main_device_count++;
-      if (address == 0x51) foundRTC = true;
+      main_found[address] = true;
     }
   } 
+
+  runI2CScanTestbench(eps_found, main_found);
 }
 
 void loop() {
