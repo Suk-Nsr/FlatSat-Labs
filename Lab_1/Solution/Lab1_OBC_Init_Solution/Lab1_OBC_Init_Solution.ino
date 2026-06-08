@@ -3,6 +3,8 @@
 // Lab 1.1: OBC Initialization
 // Solution Code
 
+#include "src/Lab1_TB_OBC_Init.h"
+
 const int OBC_RX_PIN = PD9; 
 const int OBC_TX_PIN = PD8;
 
@@ -22,4 +24,12 @@ void setup() {
 
   // TODO 3 (FILLED)
   Serial.println(bootMessage);
+
+  
+  runBootTestbench(bootMessage, OBC_RX_PIN, OBC_TX_PIN);
 } 
+
+void loop()
+{
+
+}
