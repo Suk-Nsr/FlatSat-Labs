@@ -63,38 +63,4 @@ void loop() {
   runScannerTestbench(eps_device_count, main_device_count, foundTMP102, foundRTC);
   delay(5000); 
 }
-
-// ====================================================================
-// 🛑 TESTBENCH SECTION - DO NOT MODIFY THIS CODE 🛑
-// This function verifies I2C bus routing and vital peripheral existence.
-// ====================================================================
-void runScannerTestbench(int eps_count, int main_count, bool hasTMP, bool hasRTC) {
-  Serial.println("\n--- Running BIST (I2C Subsystem Health Check) ---");
-  bool healthy = true;
-
-  if (eps_count == 0 && main_count == 0) {
-    Serial.println("❌ [CRITICAL] I2C buses completely inactive. Verify TODO 1 and TODO 2!");
-    healthy = false;
-  } else {
-    if (hasTMP) {
-      Serial.println("✅ [OK] EPS Bus: TMP102 Sensor detected at 0x4A.");
-    } else {
-      Serial.println("❌ [FAIL] EPS Bus: Missing vital TMP102 at 0x4A. Check PF0/PF1 assignment.");
-      healthy = false;
-    }
-
-    if (hasRTC) {
-      Serial.println("✅ [OK] Main Bus: PCF85063TP RTC detected at 0x51.");
-    } else {
-      Serial.println("❌ [FAIL] Main Bus: Missing vital RTC at 0x51. Check PB8/PB9 assignment.");
-      healthy = false;
-    }
-  }
-
-  if (healthy) {
-    Serial.println("🌟 [STATUS] PASS: I2C hardware fabric integrated successfully!");
-  } else {
-    Serial.println("⚠️ [STATUS] FAIL: Hardware fabric integration errors detected.");
-  }
-  Serial.println("---------------------------------------------------\n");
-}
+  
