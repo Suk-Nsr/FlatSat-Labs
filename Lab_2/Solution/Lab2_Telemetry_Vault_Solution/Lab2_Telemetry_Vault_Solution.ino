@@ -6,7 +6,7 @@
 #include <SPI.h>
 #include "SdFat_Adafruit_Fork.h"
 
-#include "Lab2_TB_Telemetry_Vault.h"
+#include "src/Lab2_TB_Telemetry_Vault.h"
 
 // --- Hardware Connection Layer (SPI3) ---
 #define SD_CS PC9

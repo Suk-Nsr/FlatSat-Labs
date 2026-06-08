@@ -9,7 +9,7 @@
 #define EXTERNAL_FLASH_USE_SPI 1
 #include <Adafruit_SPIFlash.h>
 
-#include "Lab2_TB_Backup_Mission.h"
+#include "src/Lab2_TB_Backup_Mission.h"
 
 // ====================================================================
 // HARDWARE PIN DEFINITIONS (Dual SPI Bus Architecture)
