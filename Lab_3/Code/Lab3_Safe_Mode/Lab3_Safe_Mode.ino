@@ -8,7 +8,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <PCF85063TP.h>
-#include "Lab3_TB_Safe_Mode.h"
+#include "src/Lab3_TB_Safe_Mode.h"
 
 TwoWire I2C_EPS(PF0, PF1);
 PCD85063TP rtc;
