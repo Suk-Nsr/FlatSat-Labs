@@ -9,6 +9,6 @@
 #include <Arduino.h>
 
 // Initialize function for Testbench
-void runBackupMissionTestbench(const char* fname, uint8_t originalCount);
+void runBackupMissionTestbench(const char *fname, uint8_t originalCount);
 
 #endif // LAB2_TB_BACKUP_MISSION_H

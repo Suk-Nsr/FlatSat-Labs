@@ -11,6 +11,6 @@
 #include "SdFat_Adafruit_Fork.h"
 
 // Initalize function for Main file
-void runTelemetryVaultTestbench(const char* fname);
+void runTelemetryVaultTestbench(const char *fname);
 
 #endif // LAB2_TELEMETRY_VAULT_H

@@ -7,7 +7,7 @@
 #include "SdFat_Adafruit_Fork.h"
 
 #define EXTERNAL_FLASH_USE_SPI 1
-#include <Adafruit_SPIFlash.h>  
+#include <Adafruit_SPIFlash.h>
 
 #include "Lab2_TB_Flight_recorder.h"
 
@@ -18,18 +18,24 @@ SPIClass SD_SPI(PB15, PB14, PB13);
 Adafruit_FlashTransport_SPI flashTransport(PB12, SD_SPI);
 Adafruit_SPIFlash flash(&flashTransport);
 
-void setup() {
+void setup()
+{
   Serial.setRx(PD9);
   Serial.setTx(PD8);
   Serial.begin(115200);
 
-  while(!Serial){;}
+  while (!Serial)
+  {
+    ;
+  }
 
   Serial.println("\n=== FlatSat Flight Recorder Booting ===");
 
-  if (!flash.begin()) {
+  if (!flash.begin())
+  {
     Serial.println(" 🔴 CRITICAL ERROR: SPI Flash Hardware not responding!");
-    while (1);
+    while (1)
+      ;
   }
 
   // ====================================================================
@@ -42,10 +48,10 @@ void setup() {
   // ---------------------------------------------------------
   // TODO: Flash Initialization & Flight Recorder Logic
   // ---------------------------------------------------------
-  
-  uint32_t jedecId = 0; 
+
+  uint32_t jedecId = 0;
   uint8_t currentBootCount = 0;
-  
+
   // TODO 1: Read the JEDEC ID from the Flash memory
   // Hint: Use flash.getJEDECID();
   // [Add your code here]
@@ -78,11 +84,12 @@ void setup() {
   // [Add your code here]
 
   // ---------------------------------------------------------
-  // Run Built-In Self-Test (BIST)
+  // Run Testbench (TB)
   // ---------------------------------------------------------
   runFlightRecorderTestbench(flash, jedecId, currentBootCount);
 }
 
-void loop() {
+void loop()
+{
   // Flight recorder updates only occur once per boot sequence
 }
