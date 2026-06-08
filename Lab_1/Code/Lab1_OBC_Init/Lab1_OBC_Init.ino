@@ -8,11 +8,11 @@
 
 // TODO 1: Find the UART pins for RX and TX from the FlatSat OBC Documentation.
 // Replace the placeholder values with the correct pin names (e.g., PA10, PB6, etc.).
-const int OBC_RX_PIN = PD9; 
-const int OBC_TX_PIN = PD8;
+const int OBC_RX_PIN = ???; 
+const int OBC_TX_PIN = ???;
 
 String bootMessage = "";
-
+  
 void setup() {
   Serial.setRx(OBC_RX_PIN);
   Serial.setTx(OBC_TX_PIN);

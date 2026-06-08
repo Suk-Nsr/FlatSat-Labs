@@ -1,6 +1,6 @@
 /*
  * NBSPACE Labs: FlatSat Learning Set
- * Lab 1.2: Dual I2C Scanner (Template with Robust Testbench)
+ * Lab 1.2: Dual I2C Scanner
  * Objective: Scan for I2C Addresses on BOTH subsystem buses (EPS and Main).
  */
 
@@ -54,11 +54,9 @@ void loop() {
       Serial.println(address, HEX);
       eps_device_count++;
       
-      // Hardware-level tracking for Testbench
       if (address == 0x4A) foundTMP102 = true;
     }
 
-    // 2. Scan the Main/RTC Bus
     Wire.beginTransmission(address);
     error_main = Wire.endTransmission();
 
@@ -68,14 +66,10 @@ void loop() {
       Serial.println(address, HEX);
       main_device_count++;
       
-      // Hardware-level tracking for Testbench
       if (address == 0x51) foundRTC = true;
     }
-  // -----------------------
-  // [Don't forget to close the loop bracket here!]
 
 
-  // Run the Built-In Self-Test (BIST)
   runScannerTestbench(eps_device_count, main_device_count, foundTMP102, foundRTC);
 
   delay(5000); 

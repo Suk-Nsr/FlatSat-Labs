@@ -60,7 +60,6 @@ void loop() {
     }
   } 
 
-  runScannerTestbench(eps_device_count, main_device_count, foundTMP102, foundRTC);
   delay(5000); 
 }
   
