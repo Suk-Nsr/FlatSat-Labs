@@ -1,4 +1,4 @@
-#include "testbench.h"
+#include "Lab3_TB_Read_EPS.h"
 
 void runEPSTestbench(float temp, float voltage, uint8_t inaAddr) {
   Serial.println("\n========================================");

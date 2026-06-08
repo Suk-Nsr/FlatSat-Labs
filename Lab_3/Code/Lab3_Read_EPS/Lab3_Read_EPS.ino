@@ -7,7 +7,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <PCF85063TP.h>
-#include "testbench.h"
+#include "Lab3_TB_Read_EPS.h"
 
 TwoWire I2C_EPS(PF0, PF1);
 PCD85063TP rtc;

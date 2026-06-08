@@ -1,4 +1,4 @@
-#include "testbench.h"
+#include "Lab3_TB_Safe_Mode.h"
 
 void runSafeModeTestbench(float voltage, float temp, bool triggered, float threshold) {
   Serial.println("\n========================================");

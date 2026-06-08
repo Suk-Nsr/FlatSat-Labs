@@ -1,4 +1,4 @@
-#include "testbench.h"
+#include "Lab1_TB_OBC_Init.h"
 
 void runBootTestbench(String msg, int rxPin, int txPin) {
   Serial.println("\n========================================");

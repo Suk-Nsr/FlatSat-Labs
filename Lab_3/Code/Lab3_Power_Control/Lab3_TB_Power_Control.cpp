@@ -1,4 +1,4 @@
-#include "testbench.h"
+#include "Lab3_TB_Power_Control.h"
 
 void runPowerControlTestbench(bool ch1, bool ch2, bool ch3) {
   Serial.println("\n========================================");
