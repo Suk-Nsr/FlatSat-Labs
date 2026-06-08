@@ -9,7 +9,7 @@
 #define EXTERNAL_FLASH_USE_SPI 1
 #include <Adafruit_SPIFlash.h>  
 
-#include "Lab2_TB_Flight_recorder.h"
+#include "src/Lab2_TB_Flight_Recorder.h"
 
 // ====================================================================
 // HARDWARE PIN DEFINITIONS (Pre-configured for FlatSat OBC)
