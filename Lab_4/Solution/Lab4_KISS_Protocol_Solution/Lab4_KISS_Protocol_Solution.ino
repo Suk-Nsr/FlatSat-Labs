@@ -24,35 +24,35 @@ size_t encodeKISS(const uint8_t *payload, size_t payloadSize, uint8_t *outBuffer
 {
     size_t outIndex = 0;
 
-    // // 1. Add Start FEND
-    // outBuffer[outIndex++] = FEND;
+    // 1. Add Start FEND
+    outBuffer[outIndex++] = FEND;
 
-    // // 2. Loop through raw payload and apply Byte Stuffing
-    // for (size_t i = 0; i < payloadSize; i++)
-    // {
-    //     uint8_t currentByte = payload[i];
+    // 2. Loop through raw payload and apply Byte Stuffing
+    for (size_t i = 0; i < payloadSize; i++)
+    {
+        uint8_t currentByte = payload[i];
 
-    //     if (currentByte == FEND)
-    //     {
-    //         // Replace 0xC0 with 0xDB 0xDC
-    //         outBuffer[outIndex++] = FESC;
-    //         outBuffer[outIndex++] = TFEND;
-    //     }
-    //     else if (currentByte == FESC)
-    //     {
-    //         // Replace 0xDB with 0xDB 0xDD
-    //         outBuffer[outIndex++] = FESC;
-    //         outBuffer[outIndex++] = TFESC;
-    //     }
-    //     else
-    //     {
-    //         // Normal byte, copy as-is
-    //         outBuffer[outIndex++] = currentByte;
-    //     }
-    // }
+        if (currentByte == FEND)
+        {
+            // Replace 0xC0 with 0xDB 0xDC
+            outBuffer[outIndex++] = FESC;
+            outBuffer[outIndex++] = TFEND;
+        }
+        else if (currentByte == FESC)
+        {
+            // Replace 0xDB with 0xDB 0xDD
+            outBuffer[outIndex++] = FESC;
+            outBuffer[outIndex++] = TFESC;
+        }
+        else
+        {
+            // Normal byte, copy as-is
+            outBuffer[outIndex++] = currentByte;
+        }
+    }
 
-    // // 3. Add End FEND
-    // outBuffer[outIndex++] = FEND;
+    // 3. Add End FEND
+    outBuffer[outIndex++] = FEND;
 
     return outIndex; // Return the final packet size
 }
