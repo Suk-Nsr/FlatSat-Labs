@@ -8,7 +8,7 @@
 
 #include <Arduino.h>
 
-typedef size_t (*KISS_Encoder_Ptr)(const uint8_t* payload, size_t payloadSize, uint8_t* outBuffer);
+typedef size_t (*KISS_Encoder_Ptr)(const uint8_t *payload, size_t payloadSize, uint8_t *outBuffer);
 
 void runKISSTestbench(KISS_Encoder_Ptr studentFunc);
 
