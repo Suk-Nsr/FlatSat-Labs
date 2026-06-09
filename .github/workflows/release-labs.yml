@@ -1,10 +1,10 @@
 name: Lab Code Release Automator
 
 on:
-  # Trigger automatically when a tag starting with 'v' is pushed (e.g., v1.0.0)
+  # Trigger automatically when code is pushed to the 'main' branch
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
   
   # Allow manual trigger from the GitHub Actions tab
   workflow_dispatch:
@@ -12,13 +12,13 @@ on:
       release_tag:
         description: 'Specify the tag name for this manual release (e.g., v1.0.1)'
         required: true
-        default: 'v1.0.0-manual'
+        default: 'manual-release'
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
     
-    # Required permissions to create a release on GitHub
+    # Required permissions to create and delete releases/tags on GitHub
     permissions:
       contents: write
 
@@ -35,13 +35,13 @@ jobs:
           for lab_dir in Lab_*; do
             # Check if the 'Code' directory exists inside the Lab folder
             if [ -d "$lab_dir/Code" ]; then
-              # Extract the lab number (e.g., extracting '1' from 'Lab_1')
+              # Extract the lab number
               LAB_NUM=$(echo "$lab_dir" | grep -o -E '[0-9]+')
               ZIP_FILENAME="Lab${LAB_NUM}_Code.zip"
               
               echo "Zipping contents of $lab_dir/Code into $ZIP_FILENAME..."
               
-              # Change directory to zip contents directly without preserving the folder tree
+              # Change directory to zip contents directly
               cd "$lab_dir/Code"
               
               # Compress all files and folders, excluding git tracking files
@@ -58,8 +58,18 @@ jobs:
       - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          # Use the pushed tag or the manually inputted tag
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.ref_name }}
+          # Use manual tag if triggered manually, otherwise auto-generate tag based on run number
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || format('main-build-{0}', github.run_number) }}
           # Path to the generated ZIP files
           files: output_zips/*.zip
           generate_release_notes: true
+
+      - name: Delete older releases
+        uses: dev-drprasad/delete-older-releases@v0.3.3
+        with:
+          # Keep only the latest 1 release (the one that was just created above)
+          keep_latest: 1
+          # Automatically delete the old tags associated with the deleted releases
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
