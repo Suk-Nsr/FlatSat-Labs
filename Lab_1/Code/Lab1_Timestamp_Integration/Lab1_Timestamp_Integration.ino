@@ -120,12 +120,12 @@ void loop() {
 
   float boardTemp = 0.0;
 
-  I2C_EPS.requestFrom(TMP102_ADDRESS, 2);
+  Wire.requestFrom(TMP102_ADDRESS, 2);
 
-  if (I2C_EPS.available() == 2) {
+  if (Wire.available() == 2) {
 
-    byte msb = I2C_EPS.read();
-    byte lsb = I2C_EPS.read();
+    byte msb = Wire.read();
+    byte lsb = Wire.read();
 
     int tempRaw = ((msb << 8) | lsb) >> 4;
 

@@ -9,7 +9,7 @@
 TwoWire I2C_EPS(PF0, PF1);
 PCD85063TP rtc;
 
-#define TMP102_ADDRESS 0x4A
+#define TMP102_ADDRESS 0x49
 
 const int UPLOAD_DELAY_SECONDS = 11;
 
@@ -26,7 +26,7 @@ void syncToCompileTimeWithOffset() {
   while (second >= 60) {
     second -= 60;
     minute++;
-  }
+  } 
 
   while (minute >= 60) {
     minute -= 60;
@@ -114,12 +114,12 @@ void loop() {
 
   float boardTemp = 0.0;
 
-  I2C_EPS.requestFrom(TMP102_ADDRESS, 2);
+  Wire.requestFrom(TMP102_ADDRESS, 2);
 
-  if (I2C_EPS.available() == 2) {
+  if (Wire.available() == 2) {
 
-    byte msb = I2C_EPS.read();
-    byte lsb = I2C_EPS.read();
+    byte msb = Wire.read();
+    byte lsb = Wire.read();
 
     int tempRaw = ((msb << 8) | lsb) >> 4;
 
