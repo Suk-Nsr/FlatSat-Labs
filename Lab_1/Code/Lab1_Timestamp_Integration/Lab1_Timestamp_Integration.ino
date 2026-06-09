@@ -1,74 +1,157 @@
-/*
- * NBSPACE Labs: FlatSat Learning Set
- * Lab 1.3: Timestamp Integration
- */
 
-#include <Arduino.h>
+// NBSPACE Labs: FlatSat Learning Set
+// Lab 1.3: Timestamp Integration
+// Solution Code
+
 #include <Wire.h>
-#include <PCF85063TP.h> 
-#include "src/Lab1_TB_Timestamp_Integration.h"
+#include <PCF85063TP.h>
 
-TwoWire I2C_EPS(PF0, PF1);
-PCD85063TP rtc; 
+// TODO 1: Initialize the EPS I2C bus with the appropriate SDA and SCL pins
+TwoWire I2C_EPS(???, ???);
+PCD85063TP rtc;
 
-// TODO 1: Find the correct I2C address for the TMP102 Temperature Sensor.
+// TODO 2: Find the correct I2C address for the TMP102 Temperature Sensor.
 // Replace 0x00 with the correct hexadecimal address (e.g., 0x48, 0x4A, etc.)
-#define TMP102_ADDRESS 0x00 
+#define TMP102_ADDRESS 0x00
+
+const int UPLOAD_DELAY_SECONDS = 11;
+
+void syncToCompileTimeWithOffset() {
+
+  char monthStr[4];
+  int day, year, hour, minute, second;
+
+  sscanf(__DATE__, "%s %d %d", monthStr, &day, &year);
+  sscanf(__TIME__, "%d:%d:%d", &hour, &minute, &second);
+
+  second += UPLOAD_DELAY_SECONDS;
+
+  while (second >= 60) {
+    second -= 60;
+    minute++;
+  }
+
+  while (minute >= 60) {
+    minute -= 60;
+    hour++;
+  }
+
+  while (hour >= 24) {
+    hour -= 24;
+    day++;
+  }
+
+  int month = 1;
+
+  const char* months[] = {
+    "Jan","Feb","Mar","Apr","May","Jun",
+    "Jul","Aug","Sep","Oct","Nov","Dec"
+  };
+
+  for (int i = 0; i < 12; i++) {
+    if (strcmp(monthStr, months[i]) == 0) {
+      month = i + 1;
+      break;
+    }
+  }
+
+  int y = year;
+  int m = month;
+
+  if (m < 3) {
+    m += 12;
+    y--;
+  }
+
+  int dow =
+      (day +
+       13 * (m + 1) / 5 +
+       (y % 100) +
+       (y % 100) / 4 +
+       (y / 100) / 4 +
+       5 * (y / 100)) % 7;
+
+  dow = (dow + 6) % 7;
+
+  rtc.stopClock();
+
+  rtc.fillByYMD(year, month, day);
+  rtc.fillByHMS(hour, minute, second);
+  rtc.fillDayOfWeek(dow);
+
+  // TODO 3: Write the configured time to the RTC module
+  // [Add your code here]
+
+  // TODO 4: Enable the RTC oscillator to start timekeeping
+  // [Add your code here]
+
+  Serial.println("RTC synced from compile time");
+}
 
 void setup() {
+
   Serial.setRx(PD9);
   Serial.setTx(PD8);
-
   Serial.begin(115200);
-  
-  while (!Serial) {
-    ;
-  }
-  
-  // I2C and RTC Initialization
+
+  while (!Serial) {;}
+
   I2C_EPS.begin();
+
   Wire.setSDA(PB9);
   Wire.setSCL(PB8);
-  Wire.begin(); 
+  Wire.begin();
+
   rtc.begin();
-  
+
+  syncToCompileTimeWithOffset();
+
   Serial.println("OBC Telemetry System Started...");
 }
 
 void loop() {
-  // Read Time Data
-  rtc.getTime(); 
+
+  // TODO 5: Read the current time data from the RTC module
+  // [Add your code here]
+
   int h = rtc.hour;
   int m = rtc.minute;
   int s = rtc.second;
 
   float boardTemp = 0.0;
 
-  // ---------------------------------------------------------
-  // Part 2: Read Temperature Sensor -> [TODO]
-  // ---------------------------------------------------------
-  // Task: Request 2 bytes of data from the TMP102 sensor via I2C_EPS,
-  // read the MSB and LSB, and calculate the final temperature in Celsius.
-  
-  // TODO 3: Write your sensor reading logic below and assign the result to boardTemp
-  // [Add your code here]
-  
-  
-  
+  I2C_EPS.requestFrom(TMP102_ADDRESS, 2);
 
-  // ---------------------------------------------------------
-  // Part 3: Data Integration (Do not touch this part)
-  // ---------------------------------------------------------
+  if (I2C_EPS.available() == 2) {
 
-  String hh = (h < 10) ? "0" + String(h) : String(h);
-  String mm = (m < 10) ? "0" + String(m) : String(m);
-  String ss = (s < 10) ? "0" + String(s) : String(s);
-  
-  String tempString = String(boardTemp, 2);
-  
-  String telemetryPacket = "[" + hh + ":" + mm + ":" + ss + "] OBC Temperature: " + tempString + " °C";
+    byte msb = I2C_EPS.read();
+    byte lsb = I2C_EPS.read();
 
-  runTelemetryTestbench(telemetryPacket, h, m, s, boardTemp);
+    int tempRaw = ((msb << 8) | lsb) >> 4;
+
+    boardTemp = tempRaw * 0.0625f;
+  }
+
+  String telemetryPacket = "[";
+
+  if (h < 10) telemetryPacket += "0";
+  telemetryPacket += String(h);
+
+  telemetryPacket += ":";
+
+  if (m < 10) telemetryPacket += "0";
+  telemetryPacket += String(m);
+
+  telemetryPacket += ":";
+
+  if (s < 10) telemetryPacket += "0";
+  telemetryPacket += String(s);
+
+  telemetryPacket += "] OBC Temperature: ";
+  telemetryPacket += String(boardTemp, 2);
+  telemetryPacket += " °C";
+
+  Serial.println(telemetryPacket);
 
   delay(1000);
 }
