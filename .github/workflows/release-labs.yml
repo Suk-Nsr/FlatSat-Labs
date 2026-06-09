@@ -1,0 +1,65 @@
+name: Lab Code Release Automator
+
+on:
+  # Trigger automatically when a tag starting with 'v' is pushed (e.g., v1.0.0)
+  push:
+    tags:
+      - 'v*'
+  
+  # Allow manual trigger from the GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Specify the tag name for this manual release (e.g., v1.0.1)'
+        required: true
+        default: 'v1.0.0-manual'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    # Required permissions to create a release on GitHub
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare and compress Lab Code directories
+        run: |
+          # Create an output directory for the final ZIP files
+          mkdir -p output_zips
+          
+          # Iterate through all directories matching the pattern 'Lab_*'
+          for lab_dir in Lab_*; do
+            # Check if the 'Code' directory exists inside the Lab folder
+            if [ -d "$lab_dir/Code" ]; then
+              # Extract the lab number (e.g., extracting '1' from 'Lab_1')
+              LAB_NUM=$(echo "$lab_dir" | grep -o -E '[0-9]+')
+              ZIP_FILENAME="Lab${LAB_NUM}_Code.zip"
+              
+              echo "Zipping contents of $lab_dir/Code into $ZIP_FILENAME..."
+              
+              # Change directory to zip contents directly without preserving the folder tree
+              cd "$lab_dir/Code"
+              
+              # Compress all files and folders, excluding git tracking files
+              zip -r "../../output_zips/$ZIP_FILENAME" ./* -x "*.git*"
+              
+              # Return to the root directory
+              cd -
+            fi
+          done
+          
+          # List generated files for debugging purposes
+          ls -lh output_zips/
+
+      - name: Create GitHub Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          # Use the pushed tag or the manually inputted tag
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.ref_name }}
+          # Path to the generated ZIP files
+          files: output_zips/*.zip
+          generate_release_notes: true
