@@ -1,82 +1,56 @@
-/*
- * NBSPACE Labs: FlatSat Learning Set
- * Lab 3.2: OBC Power Control
- * Objective: Send I2C commands to the EPS to enable/disable power channels.
- */
+
+// NBSPACE Labs: FlatSat Learning Set
+// Lab 3.2: OBC Power Control (Power Lines Manipulation)
+// Solution Code
+
 
 #include <Arduino.h>
-#include <Wire.h>
-#include "src/Lab3_TB_Power_Control.h"
 
-TwoWire I2C_EPS(PF0, PF1);
-
-// ====================================================================
-// HARDWARE DEFINITIONS
-// ====================================================================
-#define EPS_CONTROLLER_ADDRESS 0x08
-
-#define EPS_CMD_CH1_ENABLE     0x21  // Payload Bus ON
-#define EPS_CMD_CH1_DISABLE    0x22  // Payload Bus OFF
-#define EPS_CMD_CH2_ENABLE     0x31  // COMMS Bus ON
-#define EPS_CMD_CH2_DISABLE    0x32  // COMMS Bus OFF
-#define EPS_CMD_CH3_ENABLE     0x41  // ADCS Bus ON
-#define EPS_CMD_CH3_DISABLE    0x42  // ADCS Bus OFF
-
-bool ch1_payload = false;
-bool ch2_comms   = false;
-bool ch3_adcs    = false;
+#define PIN_COMMS      PD1
+#define PIN_PAYLOAD_1  PD2
+#define PIN_PAYLOAD_2  PD3 
 
 void setup() {
   Serial.setRx(PD9);
   Serial.setTx(PD8);
   Serial.begin(115200);
-  while (!Serial) {;}
 
-  Serial.println("\n=== FlatSat Power Control System Booting ===");
+  delay(4000)
 
-  I2C_EPS.begin();
-  Serial.println("EPS I2C command bus initialized.");
+  Serial.println("\n=== FlatSat Lab 3.2: Manual Power Control Booting ===");
 
-  // ---------------------------------------------------------
-  // EXAMPLE: How to DISABLE Channel 3 (ADCS Bus)
-  // This is pre-filled to show you the I2C command pattern.
-  // ---------------------------------------------------------
-  I2C_EPS.beginTransmission(EPS_CONTROLLER_ADDRESS);
-  I2C_EPS.write(EPS_CMD_CH3_DISABLE);
-  I2C_EPS.endTransmission();
-  ch3_adcs = false;
-  Serial.println("Command sent: ADCS Bus -> OFF");
+  pinMode(PIN_COMMS, OUTPUT);
+  pinMode(PIN_PAYLOAD_1, OUTPUT);
+  pinMode(PIN_PAYLOAD_2, OUTPUT);
 
-  // ---------------------------------------------------------
-  // TODO 1: ENABLE Channel 1 (Payload Bus)
-  // ---------------------------------------------------------
-  // Follow the same pattern as the example above, but use
-  // EPS_CMD_CH1_ENABLE instead, and set ch1_payload = true.
-  // [Add your code here]
-  
-
-
-  // ---------------------------------------------------------
-  // TODO 2: ENABLE Channel 2 (COMMS Bus)
-  // ---------------------------------------------------------
-  // Same pattern again, use EPS_CMD_CH2_ENABLE
-  // and set ch2_comms = true.
-  // [Add your code here]
-  
-
-
-  // ---------------------------------------------------------
-  // Power Status Display (Do not modify)
-  // ---------------------------------------------------------
-  Serial.println("\n--- Power Channel Status ---");
-  Serial.print("  CH1 [Payload]: "); Serial.println(ch1_payload ? "ON" : "OFF");
-  Serial.print("  CH2 [COMMS]  : "); Serial.println(ch2_comms   ? "ON" : "OFF");
-  Serial.print("  CH3 [ADCS]   : "); Serial.println(ch3_adcs    ? "ON" : "OFF");
-  Serial.println("-----------------------------------");
-
-  runPowerControlTestbench(ch1_payload, ch2_comms, ch3_adcs);
+  digitalWrite(PIN_PAYLOAD_1, LOW);
+  digitalWrite(PIN_PAYLOAD_2, LOW);
+  digitalWrite(PIN_COMMS, LOW);
+  Serial.println("Initial State: All Subsystems OFF (0V)");
+  Serial.println("Waiting 3 seconds to begin sequence...\n");
+  delay(3000);
 }
 
 void loop() {
-  // Power commands are issued once at boot
+  Serial.println("--- Power Sequence Start ---");
+
+  digitalWrite(PIN_PAYLOAD_1, HIGH);
+  Serial.println("Payload 1 (PD1) -> ON");
+  delay(4000);
+
+  digitalWrite(PIN_PAYLOAD_2, HIGH);
+  Serial.println("Payload 2 (PD3) -> ON");
+  delay(4000);
+
+  digitalWrite(PIN_COMMS, HIGH);
+  Serial.println("COMMS (PD2)     -> ON");
+  delay(4000);
+
+  digitalWrite(PIN_PAYLOAD_1, LOW);
+  digitalWrite(PIN_PAYLOAD_2, LOW);
+  digitalWrite(PIN_COMMS, LOW);
+  Serial.println("All Subsystems  -> OFF");
+  Serial.println("----------------------------\n");
+  
+  delay(5000);
 }

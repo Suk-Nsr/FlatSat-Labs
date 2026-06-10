@@ -1,7 +1,7 @@
-/*
- * NBSPACE Labs: FlatSat Learning Set
- * Lab 3.1: OBC Read EPS Telemetry (Solution)
- */
+
+// NBSPACE Labs: FlatSat Learning Set
+// Lab 3.1: OBC Read EPS Telemetry (Solution)
+// Solution Code
 
 #include <Arduino.h>
 #include <Wire.h>
