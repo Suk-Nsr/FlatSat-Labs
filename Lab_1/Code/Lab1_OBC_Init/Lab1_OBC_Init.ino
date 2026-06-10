@@ -20,7 +20,7 @@ void setup() {
   // TODO 2: Initialize the Serial Monitor with a Baud Rate of 115200.
   // [Add your code here]
   
-  while (!Serial) {;}
+  delay(4000);
 
   // TODO 3: Assign the exact text "OBC Initialized. System Booting..." to bootMessage
   // [Add your code here]

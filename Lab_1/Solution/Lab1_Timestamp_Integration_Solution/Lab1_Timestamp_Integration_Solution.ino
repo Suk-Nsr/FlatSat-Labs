@@ -89,7 +89,7 @@ void setup() {
   Serial.setTx(PD8);
   Serial.begin(115200);
 
-  while (!Serial) {;}
+  delay(4000);
 
   I2C_EPS.begin();
 

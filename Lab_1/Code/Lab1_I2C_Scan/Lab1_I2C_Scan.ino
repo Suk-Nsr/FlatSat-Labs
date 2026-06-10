@@ -15,7 +15,7 @@ void setup() {
   Serial.setTx(PD8);
   Serial.begin(115200);
   
-  while (!Serial){;}
+  delay(4000);
 
   Serial.println("\n--- FlatSat Dual I2C Scanner ---");
 
