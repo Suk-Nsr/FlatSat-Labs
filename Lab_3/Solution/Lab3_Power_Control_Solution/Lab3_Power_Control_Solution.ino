@@ -14,7 +14,8 @@ void setup() {
   Serial.setRx(PD9);
   Serial.setTx(PD8);
   Serial.begin(115200);
-  while (!Serial) {;}
+
+  delay(4000)
 
   Serial.println("\n=== FlatSat Lab 3.2: Manual Power Control Booting ===");
 
