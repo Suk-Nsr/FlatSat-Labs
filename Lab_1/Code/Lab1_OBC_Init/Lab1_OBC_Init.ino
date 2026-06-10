@@ -30,3 +30,6 @@ void setup() {
 
   runBootTestbench(bootMessage, OBC_RX_PIN, OBC_TX_PIN);
 }
+
+void loop()
+{}
