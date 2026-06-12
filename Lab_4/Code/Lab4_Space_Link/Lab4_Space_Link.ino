@@ -15,12 +15,9 @@
 // ====================================================================
 // HARDWARE PIN DEFINITIONS (Communication Module Hardware Map)
 // ====================================================================
-// SPI Bus Pins for RF Transceiver
 #define RADIO_SCK PA5
 #define RADIO_MISO PA6
 #define RADIO_MOSI PA7
-
-// Hardware Control Pins
 #define RADIO_NSS PB6
 #define RADIO_DIO0 PA10
 #define RADIO_RESET PC7
@@ -59,11 +56,11 @@ int initRadioHardware(SX1278 &radioObj)
 
     if (state == RADIOLIB_ERR_NONE)
     {
-        // TODO 1.2: Set the RF Carrier Frequency to exactly 433.0 MHz.
+        // TODO 1.2: Set the RF Carrier Frequency to somewhere around 433.0 MHz.
 
         // TODO 1.3: Set the digital over-the-air Data Rate (Bit Rate) to 9.6 kbps.
 
-        // TODO 1.4: Set the Output Transmit Power level to 10 dBm to avoid overloading.
+        // TODO 1.4: Set the Output Transmit Power level to 2 dBm to avoid overloading.
     }
     return state; // Return the initialization status code back to the testbench
 }
@@ -89,7 +86,6 @@ int transmitKISSFrame(SX1278 &radioObj, const uint8_t *payload, size_t size)
 
 void setup()
 {
-    // Initialize standard hardware Serial for debug printing
     Serial.begin(115200);
     while (!Serial)
     {
@@ -98,20 +94,46 @@ void setup()
 
     Serial.println("\n=== FlatSat COMMS: Space-to-Ground Link ===");
 
-    // Force hardware SPI bus remapping onto the specific COMMS module track tracing
     SPI.setMISO(RADIO_MISO);
     SPI.setMOSI(RADIO_MOSI);
     SPI.setSCLK(RADIO_SCK);
     SPI.begin();
 
-    // --------------------------------------------------------------------
     // Run Built-In Self-Test (BIST) Engine
-    // The testbench will call your custom initialization and transmission pointers.
-    // --------------------------------------------------------------------
     runSpaceLinkTestbench(radio, initRadioHardware, transmitKISSFrame);
 }
 
 void loop()
 {
-    // System operational flow wraps inside the one-shot BIST execution
+    // --------------------------------------------------------------------
+    // TODO 3: Custom Satellite Telemetry Mission Loop
+    // --------------------------------------------------------------------
+    // Experiment with different data vectors below to see how your Ground Station
+    // responds to various real-world space environment scenarios.
+
+    // UNCOMMENT ONE CASE AT A TIME TO TEST YOUR RADIO LINK STACK:
+
+    /* * CASE A: Standard Telemetry Frame (Nominal Health Check)
+     * Create an array with a valid XOR checksum.
+     * Example: 0x12 XOR 0x34 XOR 0x56 = 0x70
+     */
+    uint8_t studentData[] = {0x12, 0x34, 0x56, 0x70};
+    transmitKISSFrame(radio, studentData, sizeof(studentData));
+
+    /* * CASE B: Extreme Byte-Stuffing Protocol Verification
+     * Force the radio to send bytes that match FEND (0xC0) or FESC (0xDB)
+     * to ensure your Ported KISS framing protocol successfully escapes them.
+     * Correct valid XOR Checksum: 0x05 XOR 0xC0 XOR 0xDB = 0x1E
+     */
+    // uint8_t studentData[] = {0x05, 0xC0, 0xDB, 0x1E};
+    // transmitKISSFrame(radio, studentData, sizeof(studentData));
+
+    /* * CASE C: Anomaly Injection (Solar Storm Event Simulation)
+     * Purposely alter or corrupt the final checksum byte to verify if your
+     * Ground Station Mission Control parser successfully flags and drops corrupt packages.
+     */
+    // uint8_t studentData[] = {0x12, 0x34, 0x56, 0xFF}; // 0xFF is an invalid checksum
+    // transmitKISSFrame(radio, studentData, sizeof(studentData));
+
+    delay(3000);
 }
