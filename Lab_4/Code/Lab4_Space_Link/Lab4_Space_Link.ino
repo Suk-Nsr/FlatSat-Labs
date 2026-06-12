@@ -87,10 +87,7 @@ int transmitKISSFrame(SX1278 &radioObj, const uint8_t *payload, size_t size)
 void setup()
 {
     Serial.begin(115200);
-    while (!Serial)
-    {
-        ;
-    }
+    delay(2000);
 
     Serial.println("\n=== FlatSat COMMS: Space-to-Ground Link ===");
 

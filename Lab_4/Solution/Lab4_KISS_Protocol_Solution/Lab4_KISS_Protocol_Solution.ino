@@ -62,11 +62,7 @@ void setup()
     Serial.setRx(PD9);
     Serial.setTx(PD8);
     Serial.begin(115200);
-    while (!Serial)
-    {
-        ;
-    }
-
+    delay(2000);
     Serial.println("\n=== FlatSat COMMS: KISS Protocol Encapsulation ===");
 
     // ---------------------------------------------------------
