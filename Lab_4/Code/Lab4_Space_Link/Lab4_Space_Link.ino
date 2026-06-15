@@ -86,6 +86,8 @@ int transmitKISSFrame(SX1278 &radioObj, const uint8_t *payload, size_t size)
 
 void setup()
 {
+    Serial.setTx(PA2);
+    Serial.setRx(PA3);
     Serial.begin(115200);
     delay(2000);
 
