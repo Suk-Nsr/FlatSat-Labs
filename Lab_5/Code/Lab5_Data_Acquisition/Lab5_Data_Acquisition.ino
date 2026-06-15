@@ -17,6 +17,7 @@ void setup() {
   Serial.setTx(PD8);
   Serial.setRx(PD9);
   Serial.begin(115200);
+  
 
   // Initialize I2C for RTC
   Wire.setSDA(PB9);
