@@ -5,8 +5,11 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <PCF85063TP.h>
+#include "src/Lab3_TB_Read_EPS.h"
 
-TwoWire I2C_EPS(PF0, PF1);
+#define EPS_SDA PF0
+#define EPS_SCL PF1
+TwoWire I2C_EPS(EPS_SDA, EPS_SCL);
 PCD85063TP rtc;
 
 // --- INA226 sensor I2C addresses (6 channels) ---
@@ -67,15 +70,18 @@ float readCurrent(uint8_t address) {
 // ---------------------------------------------------------
 
 void setup() {
-  Serial.setRx(PD9);
-  Serial.setTx(PD8);
+  #define SERIAL_RX_PIN PD9
+  #define SERIAL_TX_PIN PD8
+  Serial.setRx(SERIAL_RX_PIN);
+  Serial.setTx(SERIAL_TX_PIN);
   Serial.begin(1000000);
-  while (!Serial) {;}
-  delay(1000); // Allow serial connection to stabilize
+  delay(4000); // Allow serial connection to stabilize
 
   I2C_EPS.begin();
-  Wire.setSDA(PB9);
-  Wire.setSCL(PB8);
+  #define MAIN_SDA PB9
+  #define MAIN_SCL PB8
+  Wire.setSDA(MAIN_SDA);
+  Wire.setSCL(MAIN_SCL);
   Wire.begin();
   
   rtc.begin();
@@ -86,6 +92,13 @@ void setup() {
   
   setupINA226(BATT_CHG_ADDR);
   setupINA226(BATT_DIS_ADDR);
+
+  // Run validation testbench
+  runEPSTestbench(I2C_EPS,
+                  EPS_SDA, EPS_SCL,
+                  MAIN_SDA, MAIN_SCL,
+                  SERIAL_RX_PIN, SERIAL_TX_PIN,
+                  SOLAR_ADDRS, BATT_CHG_ADDR, BATT_DIS_ADDR);
 }
 
 void loop() {
