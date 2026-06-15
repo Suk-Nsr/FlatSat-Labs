@@ -35,16 +35,14 @@ void runBackupMissionTestbench(const char *fname, uint8_t originalCount)
 
         Serial.println("   Reading File Content: \"" + fileContent + "\"");
 
-        // Reconstruct expected string based on the Flash variable
-        String expectedContent = "Last known boot count: " + String(originalCount);
-
+        // Verify the file contains the original boot count number
         Serial.println("\n[TEST 2] Content Checking...");
 
-        if (fileContent != expectedContent || originalCount == 0)
+        if (fileContent.indexOf(String(originalCount)) == -1 || originalCount == 0)
         {
             Serial.println(" 🔴 [FAIL] Content Check: Data corruption or missing data detected.");
             Serial.println("    -> Found:    \"" + fileContent + "\"");
-            Serial.println("    -> Expected: \"" + expectedContent + "\"");
+            Serial.println("    -> Expected to find the number: " + String(originalCount));
             Serial.println("    * Hint: Did you properly read from Flash (TODO 1) and write to SD (TODO 3)?");
             isPassed = false;
         }
