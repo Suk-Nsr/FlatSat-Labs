@@ -22,7 +22,7 @@ void setup() {
   
   delay(4000);
 
-  // TODO 3: Assign the exact text "OBC Initialized. System Booting..." to bootMessage
+  // TODO 3: Assign the text to show the bootmessage
   // [Add your code here]
 
   // TODO 4: Print the bootMessage to the Serial Monitor
