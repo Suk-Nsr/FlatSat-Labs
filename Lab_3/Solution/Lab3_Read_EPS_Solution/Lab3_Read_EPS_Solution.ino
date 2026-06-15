@@ -1,28 +1,27 @@
 // NBSPACE Labs: FlatSat Learning Set
 // Lab 3.1: OBC Read EPS Telemetry
-// เวอร์ชัน: 4 Solar Cells + Battery CHG/DIS (Full Dashboard)
-// เทคนิค: String Buffering + ANSI Clear Screen
+// Solution Code
 
 #include <Arduino.h>
 #include <Wire.h>
 #include <PCF85063TP.h>
 
-TwoWire I2C_EPS(PF0, PF1); 
-PCD85063TP rtc;            
+TwoWire I2C_EPS(PF0, PF1);
+PCD85063TP rtc;
 
-// --- I2C Addresses สำหรับเซนเซอร์ทั้งหมด 6 จุด ---
-const uint8_t SOLAR_ADDRS[4] = {0x40, 0x41, 0x42, 0x43}; // แผง Solar 1-4
-const uint8_t BATT_CHG_ADDR  = 0x47;                     // Sensor 5: Battery Charging
-const uint8_t BATT_DIS_ADDR  = 0x48;                     // Sensor 6: Battery Discharging
+// --- INA226 sensor I2C addresses (6 channels) ---
+const uint8_t SOLAR_ADDRS[4] = {0x40, 0x41, 0x42, 0x43}; // Solar panels 1–4
+const uint8_t BATT_CHG_ADDR  = 0x47;                     // Battery charge path
+const uint8_t BATT_DIS_ADDR  = 0x48;                     // Battery discharge path
 
 #define INA226_REG_BUS_VOLTAGE 0x02
 #define INA226_REG_CURRENT     0x04
 #define INA226_REG_CALIBRATION 0x05
 
-#define INA226_CAL_VALUE       5120
+#define INA226_CAL_VALUE 5120
 
 // ---------------------------------------------------------
-// ฟังก์ชันอ่านค่าจากเซนเซอร์ INA226
+// INA226 sensor read/write helpers
 // ---------------------------------------------------------
 
 void setupINA226(uint8_t address) {
@@ -43,7 +42,7 @@ float readVoltage(uint8_t address) {
     uint8_t msb = I2C_EPS.read();
     uint8_t lsb = I2C_EPS.read();
     int16_t raw = (msb << 8) | lsb;
-    return raw * 0.00125; 
+    return raw * 0.00125; // LSB = 1.25 mV
   }
   return 0.0;
 }
@@ -58,7 +57,7 @@ float readCurrent(uint8_t address) {
     uint8_t msb = I2C_EPS.read();
     uint8_t lsb = I2C_EPS.read();
     int16_t raw = (msb << 8) | lsb; 
-    return raw * 0.1; 
+    return raw * 0.1; // LSB = 0.1 mA (per calibration)
   }
   return 0.0;
 }
@@ -72,7 +71,7 @@ void setup() {
   Serial.setTx(PD8);
   Serial.begin(1000000);
   while (!Serial) {;}
-  delay(1000); 
+  delay(1000); // Allow serial connection to stabilize
 
   I2C_EPS.begin();
   Wire.setSDA(PB9);
@@ -81,25 +80,23 @@ void setup() {
   
   rtc.begin();
 
-  // ตั้งค่าเซนเซอร์ Solar ทั้ง 4 แผง
   for (int i = 0; i < 4; i++) {
     setupINA226(SOLAR_ADDRS[i]);
   }
   
-  // ตั้งค่าเซนเซอร์ฝั่ง Battery ทั้งเข้าและออก
   setupINA226(BATT_CHG_ADDR);
   setupINA226(BATT_DIS_ADDR);
 }
 
 void loop() {
-  // 1. อ่านเวลาจาก RTC
+  // 1. Read current time from RTC
   rtc.getTime();
   String hh = (rtc.hour < 10) ? "0" + String(rtc.hour) : String(rtc.hour);
   String mm = (rtc.minute < 10) ? "0" + String(rtc.minute) : String(rtc.minute);
   String ss = (rtc.second < 10) ? "0" + String(rtc.second) : String(rtc.second);
   String timeStamp = "[" + hh + ":" + mm + ":" + ss + "]";
 
-  // 2. เคลียร์จอและเริ่มต้นข้อความ
+  // 2. Build display output (ANSI clear + header)
   String displayData = "\033[2J\033[H";
 
   displayData += "=================================================\n";
@@ -108,18 +105,17 @@ void loop() {
   displayData += "  OBC MISSION TIME : " + timeStamp + "\n";
   displayData += "-------------------------------------------------\n";
 
-  // 3. วนลูปอ่านข้อมูล Solar 1 ถึง 4
+  // 3. Read and display solar panel telemetry
   float totalSolarPower = 0.0;
   for (int i = 0; i < 4; i++) {
     float v = readVoltage(SOLAR_ADDRS[i]);
     float i_ma = readCurrent(SOLAR_ADDRS[i]);
-    totalSolarPower += (v * i_ma); // คำนวณพลังงานรวม (mW)
+    totalSolarPower += (v * i_ma); // Accumulate total solar power (mW)
     
     displayData += "  [SOLAR " + String(i + 1) + "] -> Voltage: " + String(v, 2) + 
                    " V  | Current: " + String(i_ma, 1) + " mA\n";
   }
-
-  // 4. อ่านข้อมูล Battery Charge และ Discharge
+  
   float chgV = readVoltage(BATT_CHG_ADDR);
   float chgI = readCurrent(BATT_CHG_ADDR);
   float disV = readVoltage(BATT_DIS_ADDR);
@@ -131,9 +127,7 @@ void loop() {
   displayData += "=================================================\n";
   displayData += "  TOTAL SOLAR POWER IN: " + String(totalSolarPower, 1) + " mW\n";
 
-  // 5. พิมพ์ออกรวดเดียว
   Serial.print(displayData);
 
-  // 6. อัปเดตทุกๆ ครึ่งวินาที
-  delay(500); 
+  delay(500); // Refresh interval
 }
