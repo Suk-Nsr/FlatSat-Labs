@@ -1,9 +1,6 @@
-/*
- * NBSPACE Labs: FlatSat Learning Set
- * Lab 3.3: OBC Safe Mode
- * Objective: Implement autonomous safe mode that triggers when
- *            battery voltage drops below a critical threshold.
- */
+// NBSPACE Labs: FlatSat Learning Set
+// Lab 3.3: OBC Safe Mode
+// Student Code
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -13,22 +10,16 @@
 TwoWire I2C_EPS(PF0, PF1);
 PCD85063TP rtc;
 
-// ====================================================================
-// HARDWARE DEFINITIONS (Pre-configured from previous labs)
-// ====================================================================
-#define TMP102_ADDRESS         0x4A
-#define INA219_ADDRESS         0x40
+// TODO 1: Fill in sensor and EPS controller I2C addresses
+#define TMP102_ADDRESS         ???  // Temperature sensor
+#define INA219_ADDRESS         ???  // Bus voltage/current monitor
 #define INA219_REG_BUS_VOLTAGE 0x02
-#define EPS_CONTROLLER_ADDRESS 0x08
-#define EPS_CMD_CH1_DISABLE    0x22
-#define EPS_CMD_CH2_DISABLE    0x32
-#define EPS_CMD_CH3_DISABLE    0x42
+#define EPS_CONTROLLER_ADDRESS ???  // EPS MCU (channel control)
+#define EPS_CMD_CH1_DISABLE    ???  // Payload 1 OFF
+#define EPS_CMD_CH2_DISABLE    ???  // Payload 2 OFF
+#define EPS_CMD_CH3_DISABLE    ???  // COMMS OFF
 
-// ====================================================================
-// SAFE MODE CONFIGURATION
-// ====================================================================
-
-// TODO 1: Define the battery voltage threshold for triggering Safe Mode.
+// TODO 2: Define the battery voltage threshold for triggering Safe Mode.
 // Replace 0.0 with a reasonable threshold (e.g., 3.3 for a single LiPo cell).
 // Below this voltage, the OBC should enter safe mode to protect the battery.
 float SAFE_MODE_THRESHOLD = 0.0;
@@ -53,9 +44,7 @@ void setup() {
 }
 
 void loop() {
-  // ---------------------------------------------------------
-  // Step 1: Read bus voltage from INA219 (Pre-filled from Lab 3.1)
-  // ---------------------------------------------------------
+  // Read bus voltage from INA219
   float busVoltage = 0.0;
   I2C_EPS.beginTransmission(INA219_ADDRESS);
   I2C_EPS.write(INA219_REG_BUS_VOLTAGE);
@@ -65,24 +54,20 @@ void loop() {
     byte msb = I2C_EPS.read();
     byte lsb = I2C_EPS.read();
     int raw = (msb << 8) | lsb;
-    busVoltage = (raw >> 3) * 0.004;
+    busVoltage = (raw >> 3) * 0.004; // LSB = 4 mV, right-shift 3 bits
   }
 
-  // ---------------------------------------------------------
-  // Step 2: Read temperature from TMP102 (Pre-filled from Lab 1.3)
-  // ---------------------------------------------------------
+  // Read board temperature from TMP102
   float boardTemp = 0.0;
   I2C_EPS.requestFrom(TMP102_ADDRESS, 2);
   if (I2C_EPS.available() == 2) {
     byte msb = I2C_EPS.read();
     byte lsb = I2C_EPS.read();
     int tempRaw = ((msb << 8) | lsb) >> 4;
-    boardTemp = tempRaw * 0.0625;
+    boardTemp = tempRaw * 0.0625; // LSB = 0.0625°C
   }
 
-  // ---------------------------------------------------------
-  // Step 3: Get timestamp (Pre-filled from Lab 1.3)
-  // ---------------------------------------------------------
+  // Build RTC timestamp
   rtc.getTime();
   String timestamp = "";
   timestamp += (rtc.hour < 10)   ? "0" + String(rtc.hour)   : String(rtc.hour);
@@ -91,30 +76,16 @@ void loop() {
   timestamp += ":";
   timestamp += (rtc.second < 10) ? "0" + String(rtc.second) : String(rtc.second);
 
-  // ---------------------------------------------------------
-  // Step 4: Safe Mode Decision -> [TODO]
-  // ---------------------------------------------------------
-
-  // TODO 2: Implement the safe mode decision logic.
-  // If busVoltage is BELOW SAFE_MODE_THRESHOLD AND busVoltage is greater than 0:
-  //   a) Print: "LOW VOLTAGE! Entering Safe Mode..."
-  //   b) Call: shutdownAllChannels()
-  //   c) Set: safeModeTriggered = true
-  // Else:
-  //   Print normal telemetry, for example:
-  //   Serial.println("[" + timestamp + "] NOMINAL | V:" + String(busVoltage,2) + "V T:" + String(boardTemp,2) + "C");
+  // TODO 3: Implement safe mode decision logic
   // [Add your code here]
-  
 
 
   runSafeModeTestbench(busVoltage, boardTemp, safeModeTriggered, SAFE_MODE_THRESHOLD);
 
-  delay(3000);
+  delay(3000); // Monitoring interval
 }
 
-// ====================================================================
-// HELPER: Shutdown All Power Channels (Pre-filled from Lab 3.2)
-// ====================================================================
+// Disable all non-essential power channels via EPS controller
 void shutdownAllChannels() {
   I2C_EPS.beginTransmission(EPS_CONTROLLER_ADDRESS);
   I2C_EPS.write(EPS_CMD_CH1_DISABLE);

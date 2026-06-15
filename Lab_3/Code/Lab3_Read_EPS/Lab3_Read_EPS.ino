@@ -5,9 +5,12 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <PCF85063TP.h>
+#include "src/Lab3_TB_Read_EPS.h"
 
 // TODO 1: Initialize EPS I2C bus with correct SDA/SCL pins
-TwoWire I2C_EPS(???, ???);
+#define EPS_SDA ???
+#define EPS_SCL ???
+TwoWire I2C_EPS(EPS_SDA, EPS_SCL);
 PCD85063TP rtc;
 
 // TODO 2: Fill in I2C addresses for all 6 INA226 sensors
@@ -69,15 +72,19 @@ float readCurrent(uint8_t address) {
 
 void setup() {
   // TODO 3: Assign Serial RX/TX pins for OBC debug UART
-  Serial.setRx(???);
-  Serial.setTx(???);
+  #define SERIAL_RX_PIN ???
+  #define SERIAL_TX_PIN ???
+  Serial.setRx(SERIAL_RX_PIN);
+  Serial.setTx(SERIAL_TX_PIN);
   Serial.begin(1000000);
   delay(4000); // Allow serial connection to stabilize
 
   // TODO 4: Start both I2C buses and assign Main bus SDA/SCL pins
   // [Add your code here]
-  Wire.setSDA(???);
-  Wire.setSCL(???);
+  #define MAIN_SDA ???
+  #define MAIN_SCL ???
+  Wire.setSDA(MAIN_SDA);
+  Wire.setSCL(MAIN_SCL);
   // [Add your code here]
   
   // TODO 5: Initialize RTC
@@ -89,6 +96,13 @@ void setup() {
   
   setupINA226(BATT_CHG_ADDR);
   setupINA226(BATT_DIS_ADDR);
+
+  // Run validation testbench
+  runEPSTestbench(I2C_EPS,
+                  EPS_SDA, EPS_SCL,
+                  MAIN_SDA, MAIN_SCL,
+                  SERIAL_RX_PIN, SERIAL_TX_PIN,
+                  SOLAR_ADDRS, BATT_CHG_ADDR, BATT_DIS_ADDR);
 }
 
 void loop() {
