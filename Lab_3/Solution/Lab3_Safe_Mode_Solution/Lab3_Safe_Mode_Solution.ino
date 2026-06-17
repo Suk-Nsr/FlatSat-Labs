@@ -10,17 +10,20 @@
 TwoWire I2C_EPS(PF0, PF1);
 PCD85063TP rtc;
 
-// TODO 1 (FILLED): Sensor and EPS controller I2C addresses
-#define TMP102_ADDRESS         0x4A  // Temperature sensor
-#define INA219_ADDRESS         0x40  // Bus voltage/current monitor
-#define INA219_REG_BUS_VOLTAGE 0x02
-#define EPS_CONTROLLER_ADDRESS 0x08  // EPS MCU (channel control)
-#define EPS_CMD_CH1_DISABLE    0x22  // Payload 1 OFF
-#define EPS_CMD_CH2_DISABLE    0x32  // Payload 2 OFF
-#define EPS_CMD_CH3_DISABLE    0x42  // COMMS OFF
+// --- I2C Addresses ---
+#define TMP102_ADDRESS         0x49  // OBC Board Temperature sensor (via Wire)
+#define BATT1_TMP102_ADDRESS   0x4A  // Battery 1 Temperature sensor (via I2C_EPS)
+#define BATT2_TMP102_ADDRESS   0x4B  // Battery 2 Temperature sensor (via I2C_EPS)
+
+#define INA226_ADDRESS         0x48  // Sensor 6: Battery Discharging Monitor (via I2C_EPS)
+#define INA226_REG_BUS_VOLTAGE 0x02
+
+// --- Hardware Power Control Pins ---  
+#define PIN_COMMS      PD1
+#define PIN_PAYLOAD_1  PD2
+#define PIN_PAYLOAD_2  PD3
 
 float SAFE_MODE_THRESHOLD = 3.3;
-
 bool safeModeTriggered = false;
 
 void setup() {
@@ -31,22 +34,34 @@ void setup() {
 
   Serial.println("\n=== FlatSat Safe Mode Controller Booting ===");
 
-  I2C_EPS.begin();
-  Wire.setSDA(PB9);
+  // Initialize Power Control Pins
+  pinMode(PIN_COMMS, OUTPUT);
+  pinMode(PIN_PAYLOAD_1, OUTPUT);
+  pinMode(PIN_PAYLOAD_2, OUTPUT);
+
+  // Initialize payloads to ON (HIGH)
+  digitalWrite(PIN_COMMS, HIGH);
+  digitalWrite(PIN_PAYLOAD_1, HIGH);
+  digitalWrite(PIN_PAYLOAD_2, HIGH);
+
+  // Initialize Buses
+  I2C_EPS.begin();     // EPS I2C on PF0/PF1
+  Wire.setSDA(PB9);    // Main I2C on PB9/PB8
   Wire.setSCL(PB8);
   Wire.begin();
   rtc.begin();
 
-  Serial.println("All subsystems initialized. Monitoring power...");
+  Serial.println("All subsystems initialized. Monitoring power and thermals...");
 }
 
 void loop() {
-  // Read bus voltage from INA219
+  // Read bus voltage from INA226 via EPS Bus
   float busVoltage = 0.0;
-  I2C_EPS.beginTransmission(INA219_ADDRESS);
-  I2C_EPS.write(INA219_REG_BUS_VOLTAGE);
+  I2C_EPS.beginTransmission(INA226_ADDRESS);
+  I2C_EPS.write(INA226_REG_BUS_VOLTAGE);
   I2C_EPS.endTransmission();
-  I2C_EPS.requestFrom(INA219_ADDRESS, 2);
+  I2C_EPS.requestFrom(INA226_ADDRESS, 2);
+  
   if (I2C_EPS.available() == 2) {
     byte msb = I2C_EPS.read();
     byte lsb = I2C_EPS.read();
@@ -54,14 +69,34 @@ void loop() {
     busVoltage = (raw >> 3) * 0.004; // LSB = 4 mV, right-shift 3 bits
   }
 
-  // Read board temperature from TMP102
+  // Read board temperature from TMP102 via Main Wire Bus
   float boardTemp = 0.0;
-  I2C_EPS.requestFrom(TMP102_ADDRESS, 2);
+  Wire.requestFrom(TMP102_ADDRESS, 2); 
+  if (Wire.available() == 2) {
+    byte msb = Wire.read();
+    byte lsb = Wire.read();
+    int tempRaw = ((msb << 8) | lsb) >> 4;
+    boardTemp = tempRaw * 0.0625; // LSB = 0.0625°C
+  }
+
+  // Read Battery 1 temperature from TMP102 via EPS Bus
+  float batt1Temp = 0.0;
+  I2C_EPS.requestFrom(BATT1_TMP102_ADDRESS, 2); 
   if (I2C_EPS.available() == 2) {
     byte msb = I2C_EPS.read();
     byte lsb = I2C_EPS.read();
     int tempRaw = ((msb << 8) | lsb) >> 4;
-    boardTemp = tempRaw * 0.0625; // LSB = 0.0625°C
+    batt1Temp = tempRaw * 0.0625;
+  }
+
+  // Read Battery 2 temperature from TMP102 via EPS Bus
+  float batt2Temp = 0.0;
+  I2C_EPS.requestFrom(BATT2_TMP102_ADDRESS, 2); 
+  if (I2C_EPS.available() == 2) {
+    byte msb = I2C_EPS.read();
+    byte lsb = I2C_EPS.read();
+    int tempRaw = ((msb << 8) | lsb) >> 4;
+    batt2Temp = tempRaw * 0.0625;
   }
 
   // Build RTC timestamp
@@ -73,33 +108,31 @@ void loop() {
   timestamp += ":";
   timestamp += (rtc.second < 10) ? "0" + String(rtc.second) : String(rtc.second);
 
-  // TODO 3 (FILLED): Implement safe mode decision logic
+  // Safe mode decision logic
   if (busVoltage < SAFE_MODE_THRESHOLD && busVoltage > 0) {
     Serial.println("LOW VOLTAGE! Entering Safe Mode...");
     shutdownAllChannels();
     safeModeTriggered = true;
   } else {
-    Serial.println("[" + timestamp + "] NOMINAL | V:" + String(busVoltage,2) + "V T:" + String(boardTemp,2) + "C");
+    // Log nominal state with all telemetry
+    Serial.print("[" + timestamp + "] NOMINAL | ");
+    Serial.print("V:" + String(busVoltage,2) + "V | ");
+    Serial.print("OBC_T:" + String(boardTemp,2) + "C | ");
+    Serial.print("B1_T:" + String(batt1Temp,2) + "C | ");
+    Serial.println("B2_T:" + String(batt2Temp,2) + "C");
   }
 
+  // Run external testbench validations
   runSafeModeTestbench(busVoltage, boardTemp, safeModeTriggered, SAFE_MODE_THRESHOLD);
 
   delay(3000); // Monitoring interval
 }
 
-// Disable all non-essential power channels via EPS controller
+// Disable all non-essential power channels via direct GPIO control
 void shutdownAllChannels() {
-  I2C_EPS.beginTransmission(EPS_CONTROLLER_ADDRESS);
-  I2C_EPS.write(EPS_CMD_CH1_DISABLE);
-  I2C_EPS.endTransmission();
+  digitalWrite(PIN_PAYLOAD_1, LOW);
+  digitalWrite(PIN_PAYLOAD_2, LOW);
+  digitalWrite(PIN_COMMS, LOW);
 
-  I2C_EPS.beginTransmission(EPS_CONTROLLER_ADDRESS);
-  I2C_EPS.write(EPS_CMD_CH2_DISABLE);
-  I2C_EPS.endTransmission();
-
-  I2C_EPS.beginTransmission(EPS_CONTROLLER_ADDRESS);
-  I2C_EPS.write(EPS_CMD_CH3_DISABLE);
-  I2C_EPS.endTransmission();
-
-  Serial.println("All non-essential loads DISABLED.");
+  Serial.println("All non-essential loads DISABLED via GPIO.");
 }

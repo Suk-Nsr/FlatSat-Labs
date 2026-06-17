@@ -36,7 +36,7 @@ void loop() {
     lastCheck = millis();
 
     if (!gps.location.isValid()) {
-      Serial.println("Waiting for GPS signal...");
+      Serial.println("Waiting for GPS fix...");
       return;
     }
 

@@ -31,7 +31,6 @@ void setup() {
   rtc.begin();
 
   Serial.println("Lab 5.1: GPS and RTC Data Acquisition Started");
-  Serial.println("Note: GPS requires a clear view of the sky (4+ satellites) to get a location fix.");
 }
 
 void loop() {
@@ -54,6 +53,11 @@ void loop() {
   if (millis() - lastPrint > 1000) {
     lastPrint = millis();
 
+    if (!gps.location.isValid()) {
+      Serial.println("Waiting for GPS fix...");
+      return;
+    }
+
     // 1. Print Time
     Serial.print("Time: ");
     if (hour < 10) Serial.print("0");
@@ -63,18 +67,10 @@ void loop() {
     if (second < 10) Serial.print("0");
     Serial.print(second);
 
-    // 2. Print Location or Status
-    if (gps.location.isValid()) {
-      Serial.print(" | Location: ");
-      Serial.print(gps.location.lat(), 6);
-      Serial.print(", ");
-      Serial.print(gps.location.lng(), 6);
-      
-      Serial.print(" | Sats: ");
-      Serial.println(gps.satellites.value());
-    } else {
-      Serial.print(" | Waiting for signal... Satellites visible: ");
-      Serial.println(gps.satellites.isValid() ? gps.satellites.value() : 0);
-    }
+    // 2. Print Location
+    Serial.print(" | Location: ");
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(", ");
+    Serial.println(gps.location.lng(), 6);
   }
 }
