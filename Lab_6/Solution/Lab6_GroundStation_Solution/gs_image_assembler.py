@@ -47,7 +47,7 @@ try:
                 # END OF TRANSMISSION (EOT) CHECK
                 # ---------------------------------------------------------
                 if chunk_index == 0xFFFF and payload_len == 0:
-                    print("\n🎉 [SUCCESS] End of Transmission (EOT) received! Image assembly complete.")
+                    print("\n[SUCCESS] End of Transmission (EOT) received! Image assembly complete.")
                     break # Exit the while loop gracefully to close the file
                 
                 image_bytes = binascii.unhexlify(image_hex)
