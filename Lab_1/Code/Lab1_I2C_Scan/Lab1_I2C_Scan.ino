@@ -7,7 +7,7 @@
 #include <Wire.h>
 #include "src/Lab1_TB_I2C_Scan.h"
 
-// TODO 1: Find the EPS I2C pins from the documentation and configure the TwoWire object.
+// TODO 1: Find the EPS I2C pins (SDA,SCL)from the documentation and configure the TwoWire object.
 TwoWire I2C_EPS(???, ???);
 
 void setup() {
