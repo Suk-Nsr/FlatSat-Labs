@@ -133,6 +133,6 @@ void loop() {
       
     }
 
-    runMissionTestbench(inTargetArea);
+    runMissionTestbench(currentLat, currentLon, inTargetArea);
   }
 }

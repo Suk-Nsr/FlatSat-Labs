@@ -1,6 +1,6 @@
 // NBSPACE Labs: FlatSat Learning Set
 // Lab 5.3: Mission Logic & Payload Control
-// Solution Code
+// Solution Code (Integrated GPS Gating & Image Saving)
 
 #include <Wire.h>
 #include <PCF85063TP.h>
@@ -33,10 +33,36 @@ FsFile file;
 
 const int CAM_CS = PE_7;
 Arducam_Mega myCAM(CAM_CS);
-#define BUFFER_SIZE 0xff
+#define BUFFER_SIZE 256 // Better alignment for SD Card writes
 
 // Power Control Pin for Payload
-const int PAYLOAD_POWER_PIN = PD1;
+const int CAMERA_POWER_PIN = PD1;
+bool isCameraOn = false; // Tracks if camera is already powered up
+
+// Image saving variables
+uint8_t imageCount = 0;
+char imageName[13] = { 0 };
+uint8_t imageData = 0;
+uint8_t imageDataNext = 0;
+uint8_t headFlag = 0;
+unsigned int buffIndex = 0;
+uint8_t imageBuff[BUFFER_SIZE] = { 0 };
+
+// --- STM32 ARDUCAM HAL FIX ---
+// The Arducam C-core lacks STM32 definitions for the CS pin.
+// This block links the C-core to standard Arduino commands.
+extern "C" {
+  void arducamCsOutputMode() {
+    pinMode(CAM_CS, OUTPUT);
+  }
+  void arducamSpiCsPinLow() {
+    digitalWrite(CAM_CS, LOW);
+  }
+  void arducamSpiCsPinHigh() {
+    digitalWrite(CAM_CS, HIGH);
+  }
+}
+// -----------------------------
 
 void setup() {
   Serial.setTx(PD8);
@@ -50,9 +76,10 @@ void setup() {
   gps_uart.begin(9600);
   rtc.begin();
 
-  // Set the PAYLOAD_POWER_PIN as OUTPUT
-  pinMode(PAYLOAD_POWER_PIN, OUTPUT);
-  digitalWrite(PAYLOAD_POWER_PIN, LOW); // Start with power off
+  // Set the CAMERA_POWER_PIN as OUTPUT
+  pinMode(CAMERA_POWER_PIN, OUTPUT);
+  digitalWrite(CAMERA_POWER_PIN, LOW); // Start with power off
+  isCameraOn = false;
 
   // Initialize Camera SPI
   SPI.setMISO(PB_4);
@@ -103,26 +130,72 @@ void loop() {
     if (inTargetArea) {
       Serial.println("Inside ROI. Executing Mission payload...");
       
-      // Turn ON Payload power
-      digitalWrite(PAYLOAD_POWER_PIN, HIGH);
-      delay(500); // Give camera time to boot
-
-      // Ensure Camera is initialized
-      myCAM.begin();
+      // Smart Power Management: Only boot if not already on
+      if (!isCameraOn) {
+        Serial.println("Powering up Camera Payload...");
+        digitalWrite(CAMERA_POWER_PIN, HIGH);
+        delay(2000); // Wait 2 seconds for sensor boot and auto-exposure adjustment
+        myCAM.begin();
+        isCameraOn = true;
+      }
 
       // Read RTC time for Metadata
       rtc.getTime();
       
       // --- CAPTURE & SAVE IMAGE ---
+      Serial.print("Taking picture... ");
       myCAM.takePicture(CAM_IMAGE_MODE_VGA, CAM_IMAGE_PIX_FMT_JPG);
-      // (Image saving bytes logic would go here, omitted for brevity but students could copy from examples)
+
+      headFlag = 0;
+      buffIndex = 0;
+      imageData = 0;
+      imageDataNext = 0;
+
+      while (myCAM.getReceivedLength()) {
+        imageData = imageDataNext;
+        imageDataNext = myCAM.readByte();
+
+        if (headFlag == 1) {
+          imageBuff[buffIndex++] = imageDataNext;
+          if (buffIndex >= BUFFER_SIZE) {
+            file.write(imageBuff, buffIndex);
+            buffIndex = 0;
+          }
+        }
+
+        // Check for JPEG start (0xFF 0xD8)
+        if (imageData == 0xff && imageDataNext == 0xd8) {
+          headFlag = 1;
+          sprintf(imageName, "IMG_%d.JPG", imageCount);
+          imageCount++;
+          // O_TRUNC ensures we overwrite old files completely instead of merging them
+          if (!file.open(imageName, O_RDWR | O_CREAT | O_TRUNC)) {
+            Serial.println("File open failed!");
+            break;
+          }
+          imageBuff[buffIndex++] = imageData;
+          imageBuff[buffIndex++] = imageDataNext;
+        }
+
+        // Check for JPEG end (0xFF 0xD9)
+        if (imageData == 0xff && imageDataNext == 0xd9) {
+          headFlag = 0;
+          file.write(imageBuff, buffIndex);
+          buffIndex = 0;
+          file.close();
+          Serial.print("Saved to SD card as: ");
+          Serial.println(imageName);
+          break;
+        }
+      }
       
       // --- METADATA LOGGING ---
       if (file.open("METADATA.TXT", O_RDWR | O_CREAT | O_APPEND)) {
         file.print("Time: ");
         file.print(rtc.hour); file.print(":"); file.print(rtc.minute); file.print(":"); file.print(rtc.second);
         file.print(" | Location: ");
-        file.print(currentLat, 6); file.print(", "); file.println(currentLon, 6);
+        file.print(currentLat, 6); file.print(", "); file.print(currentLon, 6);
+        file.print(" | Image: "); file.println(imageName);
         file.close();
         Serial.println("Metadata saved successfully.");
       } else {
@@ -132,12 +205,14 @@ void loop() {
       Serial.println("Payload execution completed.");
       
     } else {
-      Serial.println("Outside ROI. Entering Power Save Mode.");
-      
-      // Turn OFF Payload power
-      digitalWrite(PAYLOAD_POWER_PIN, LOW);
+      // Smart Power Management: Turn off if leaving zone
+      if (isCameraOn) {
+        Serial.println("Outside ROI. Entering Power Save Mode.");
+        digitalWrite(CAMERA_POWER_PIN, LOW);
+        isCameraOn = false;
+      }
     }
 
-    runMissionTestbench(inTargetArea);
+    runMissionTestbench(currentLat, currentLon, inTargetArea);
   }
 }
