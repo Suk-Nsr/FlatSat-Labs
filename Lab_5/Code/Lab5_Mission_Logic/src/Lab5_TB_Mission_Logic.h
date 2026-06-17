@@ -3,6 +3,6 @@
 
 #include <Arduino.h>
 
-void runMissionTestbench(bool inTargetArea);
+void runMissionTestbench(float lat, float lon, bool inTargetArea);
 
 #endif

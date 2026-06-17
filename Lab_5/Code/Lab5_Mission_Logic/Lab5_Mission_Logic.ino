@@ -1,6 +1,6 @@
 // NBSPACE Labs: FlatSat Learning Set
-// Lab 5.3: Mission Logic & Payload Control
-// Objective: Integrate GPS-Gating, Payload Power Control, Camera, and Metadata Logging.
+// Lab 5.3: Mission Logic & Camera Control
+// Objective: Integrate GPS-Gating, Camera Power Control, Camera, and Metadata Logging.
 
 #include <Wire.h>
 #include <PCF85063TP.h>
@@ -35,8 +35,8 @@ const int CAM_CS = PE_7;
 Arducam_Mega myCAM(CAM_CS);
 #define BUFFER_SIZE 0xff
 
-// Power Control Pin for Payload
-const int PAYLOAD_POWER_PIN = PD1;
+// Power Control Pin for Camera
+const int CAMERA_POWER_PIN = PD4;
 
 void setup() {
   Serial.setTx(PD8);
@@ -51,7 +51,7 @@ void setup() {
   rtc.begin();
 
   // Initialize Power Control Pin
-  // TODO 1: Set the PAYLOAD_POWER_PIN as OUTPUT
+  // TODO 1: Set the CAMERA_POWER_PIN as OUTPUT
   // [Add your code here]
 
   // Initialize Camera SPI
@@ -81,9 +81,13 @@ void loop() {
   if (millis() - lastMissionRun > 5000) {
     lastMissionRun = millis();
 
-    // Use simulated coordinates if no GPS fix is available for testing
-    float currentLat = gps.location.isValid() ? gps.location.lat() : 13.7563;
-    float currentLon = gps.location.isValid() ? gps.location.lng() : 100.5018;
+    if (!gps.location.isValid()) {
+      Serial.println("Waiting for GPS fix...");
+      return;
+    }
+
+    float currentLat = gps.location.lat();
+    float currentLon = gps.location.lng();
     
     Serial.print("Current Location: ");
     Serial.print(currentLat, 4); Serial.print(", "); Serial.println(currentLon, 4);
@@ -95,9 +99,9 @@ void loop() {
 
 
     if (inTargetArea) {
-      Serial.println("Inside ROI. Executing Mission payload...");
+      Serial.println("Inside ROI. Executing Mission...");
       
-      // TODO 3: Turn ON Payload power by writing HIGH to PAYLOAD_POWER_PIN
+      // TODO 3: Turn ON Camera power by writing HIGH to CAMERA_POWER_PIN
       // [Add your code here]
       
       delay(500); // Give camera time to boot
@@ -111,24 +115,21 @@ void loop() {
       // --- CAPTURE & SAVE IMAGE ---
       myCAM.takePicture(CAM_IMAGE_MODE_VGA, CAM_IMAGE_PIX_FMT_JPG);
       
-      // ... image saving logic omitted for brevity in skeleton, 
-      // but students would typically call a pre-made function to save image ...
-      
       // --- METADATA LOGGING ---
       // TODO 4: Open a file named "METADATA.TXT" in Append mode (O_RDWR | O_CREAT | O_APPEND)
       // and write the current time and GPS coordinates to it.
       // [Add your code here]
 
-      Serial.println("Payload execution completed. Image and Metadata saved.");
+      Serial.println("Camera execution completed. Image and Metadata saved.");
       
     } else {
       Serial.println("Outside ROI. Entering Power Save Mode.");
       
-      // TODO 5: Turn OFF Payload power by writing LOW to PAYLOAD_POWER_PIN
+      // TODO 5: Turn OFF Camera power by writing LOW to CAMERA_POWER_PIN
       // [Add your code here]
       
     }
 
-    runMissionTestbench(inTargetArea);
+    runMissionTestbench(currentLat, currentLon, inTargetArea);
   }
 }

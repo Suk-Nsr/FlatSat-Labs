@@ -1,16 +1,20 @@
 // NBSPACE Labs: FlatSat Learning Set
 // Lab 5.1: Data Acquisition (GPS & RTC)
-// Objective: Learn to read and parse NMEA coordinates from GPS and time from RTC.
+// Skeleton Code
 
 #include <Wire.h>
 #include <PCF85063TP.h>
-#include "src/Lab5_TB_Data_Acquisition.h"
+#include <TinyGPS++.h>
 
-// TODO 1: Initialize the GPS UART pins (from OBC documentation: PE0, PE1)
-HardwareSerial gps_uart(???, ???);
+// Initialize the GPS UART pins
+// TODO 1: Declare the GPS UART with its pins as a HardwareSerial object named gps_uart
+// [Add your code here]
 
-// Initialize RTC
+// Initialize RTC and GPS objects
 PCD85063TP rtc;
+
+// TODO 2: Initialize the GPS as a TinyGPSPlus object named gps
+// [Add your code here]
 
 void setup() {
   // Initialize Serial Monitor
@@ -23,43 +27,58 @@ void setup() {
   Wire.setSCL(PB8);
   Wire.begin();
 
-  // TODO 2: Start the GPS UART with a baud rate of 9600
+  // Start the GPS UART (TODO 3)
+  // TODO 3: Begin the GPS UART communication at 9600 baud rate
   // [Add your code here]
 
-  // TODO 3: Initialize the RTC
-  // [Add your code here]
+  // Initialize the RTC
+  rtc.begin();
 
   Serial.println("Lab 5.1: GPS and RTC Data Acquisition Started");
+  Serial.println("Note: GPS requires a clear view of the sky (4+ satellites) to get a location fix.");
 }
 
 void loop() {
   // --- Section 1: Read RTC Time ---
-  // TODO 4: Read the current time from the RTC module
-  // [Add your code here]
+  rtc.getTime();
 
   int hour = rtc.hour;
   int minute = rtc.minute;
   int second = rtc.second;
 
-  Serial.print("Time: ");
-  Serial.print(hour); Serial.print(":");
-  Serial.print(minute); Serial.print(":");
-  Serial.println(second);
-
   // --- Section 2: Read GPS NMEA ---
-  // TODO 5: Read data from the GPS UART and print it to the Serial Monitor
-  // Hint: Use gps_uart.available() and gps_uart.read()
-  
-  while (???) {
-    char c = ???;
-    Serial.write(c);
+  // Read all incoming GPS data
+  while (gps_uart.available() > 0) {
+    char c = gps_uart.read();
+    gps.encode(c);
   }
 
-  // Note for students: 
-  // In the solution, you may use a library like TinyGPS++ to easily parse the NMEA 
-  // data into Latitude and Longitude values. For this step, simply verifying 
-  // that you can read the raw $GPRMC or $GPGGA sentences is sufficient.
+  // Print results every second
+  static unsigned long lastPrint = 0;
+  if (millis() - lastPrint > 1000) {
+    lastPrint = millis();
 
-  runDataAcquisitionTestbench();
-  delay(1000);
+    // 1. Print Time
+    Serial.print("Time: ");
+    if (hour < 10) Serial.print("0");
+    Serial.print(hour); Serial.print(":");
+    if (minute < 10) Serial.print("0");
+    Serial.print(minute); Serial.print(":");
+    if (second < 10) Serial.print("0");
+    Serial.print(second);
+
+    // 2. Print Location or Status
+    if (gps.location.isValid()) {
+      Serial.print(" | Location: ");
+      Serial.print(gps.location.lat(), 6);
+      Serial.print(", ");
+      Serial.print(gps.location.lng(), 6);
+      
+      Serial.print(" | Sats: ");
+      Serial.println(gps.satellites.value());
+    } else {
+      Serial.print(" | Waiting for signal... Satellites visible: ");
+      Serial.println(gps.satellites.isValid() ? gps.satellites.value() : 0);
+    }
+  }
 }

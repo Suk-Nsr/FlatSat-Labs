@@ -11,6 +11,6 @@ void runGPSGatingTestbench(float lat, float lon, bool isInside) {
   if (isInside == expected) {
     Serial.println("[Testbench] ✅ Gating logic is CORRECT.");
   } else {
-    Serial.println("[Testbench] ❌ Gating logic is INCORRECT. Please review your if-else conditions.");
+    Serial.println("[Testbench] ❌ Gating logic is INCORRECT. Please review your program.");
   }
 }
