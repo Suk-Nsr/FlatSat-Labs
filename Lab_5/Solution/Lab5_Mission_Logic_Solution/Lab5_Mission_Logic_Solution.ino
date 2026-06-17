@@ -81,9 +81,13 @@ void loop() {
   if (millis() - lastMissionRun > 5000) {
     lastMissionRun = millis();
 
-    // Use simulated coordinates if no GPS fix is available for testing
-    float currentLat = gps.location.isValid() ? gps.location.lat() : 13.7563;
-    float currentLon = gps.location.isValid() ? gps.location.lng() : 100.5018;
+    if (!gps.location.isValid()) {
+      Serial.println("Waiting for GPS fix...");
+      return;
+    }
+
+    float currentLat = gps.location.lat();
+    float currentLon = gps.location.lng();
     
     Serial.print("Current Location: ");
     Serial.print(currentLat, 4); Serial.print(", "); Serial.println(currentLon, 4);
