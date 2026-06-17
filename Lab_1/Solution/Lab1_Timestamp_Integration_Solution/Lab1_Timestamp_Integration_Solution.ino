@@ -1,4 +1,3 @@
-
 // NBSPACE Labs: FlatSat Learning Set
 // Lab 1.3: Timestamp Integration
 // Solution Code
@@ -52,6 +51,30 @@ void syncToCompileTimeWithOffset() {
     }
   }
 
+  rtc.getTime();
+  int c_year = year - 2000;
+  bool needsSync = false;
+
+  // Only sync if the compile time is newer than the RTC's current time
+  if (rtc.year < c_year) needsSync = true;
+  else if (rtc.year == c_year) {
+    if (rtc.month < month) needsSync = true;
+    else if (rtc.month == month) {
+      if (rtc.dayOfMonth < day) needsSync = true;     // FIXED HERE
+      else if (rtc.dayOfMonth == day) {               // FIXED HERE
+        if (rtc.hour < hour) needsSync = true;
+        else if (rtc.hour == hour) {
+          if (rtc.minute <= minute) needsSync = true;
+        }
+      }
+    }
+  }
+
+  if (!needsSync) {
+    Serial.println("RTC time is up-to-date. Skipping compile-time sync.");
+    return;
+  }
+
   int y = year;
   int m = month;
 
@@ -72,7 +95,7 @@ void syncToCompileTimeWithOffset() {
 
   rtc.stopClock();
 
-  rtc.fillByYMD(year, month, day);
+  rtc.fillByYMD(year - 2000, month, day);
   rtc.fillByHMS(hour, minute, second);
   rtc.fillDayOfWeek(dow);
 
