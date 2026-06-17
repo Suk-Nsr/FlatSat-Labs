@@ -30,7 +30,7 @@ HardwareSerial CommsUART(PA1, PA0);
 // ====================================================================
 // MISSION PARAMETERS
 // ====================================================================
-#define CHUNK_SIZE 64
+#define CHUNK_SIZE 48
 #define ACK_TIMEOUT_MS 2000    // Wait up to 2 seconds for COMMS to reply
 #define WDT_TIMEOUT_US 4000000 // Watchdog Timeout set to 4 seconds
 
@@ -39,6 +39,7 @@ const char *STATE_FILE = "state.txt";
 
 uint32_t currentChunkIndex = 0;
 bool isTransferComplete = false;
+bool hasSeuOccurred = false;
 
 // ====================================================================
 // STATE RECOVERY FUNCTIONS
@@ -53,6 +54,7 @@ void loadTransferState()
       String valStr = stateFile.readStringUntil('\n');
       currentChunkIndex = valStr.toInt();
       stateFile.close();
+      hasSeuOccurred = true;
       Serial.print("[RECOVERY] Resuming transfer from Chunk #");
       Serial.println(currentChunkIndex);
     }
@@ -130,6 +132,15 @@ void loop()
     return;
   }
 
+  if ((currentChunkIndex * CHUNK_SIZE) >= imgFile.fileSize())
+  {
+    Serial.println("\n[SUCCESS] Entire image transmitted to COMMS successfully!");
+    isTransferComplete = true;
+    sd.remove(STATE_FILE);
+    imgFile.close();
+    return;
+  }
+
   // Seek to the precise byte address of the current chunk
   imgFile.seek(currentChunkIndex * CHUNK_SIZE);
 
@@ -139,26 +150,21 @@ void loop()
   buffer[0] = (currentChunkIndex >> 8) & 0xFF;
   buffer[1] = currentChunkIndex & 0xFF;
 
-  size_t bytesRead = imgFile.read(&buffer[2], CHUNK_SIZE);
+  int bytesRead = imgFile.read(&buffer[3], CHUNK_SIZE);
   imgFile.close();
 
-  if (bytesRead == 0)
-  {
-    Serial.println("\n[SUCCESS] Entire image transmitted to COMMS successfully!");
-    isTransferComplete = true;
-    sd.remove(STATE_FILE);
-    return;
-  }
-
-  size_t packetSize = bytesRead + 2;
+  buffer[2] = bytesRead & 0xFF;
+  size_t packetSize = bytesRead + 3;
 
   // ------------------------------------------------------------------
   // Simulated Single Event Upset (SEU) - Radiation Anomaly
   // ------------------------------------------------------------------
-  if (currentChunkIndex == 10)
+
+  if (currentChunkIndex == 10 && !hasSeuOccurred)
   {
-    Serial.println("\n☢️ [WARNING] RADIATION SPIKE DETECTED! SEU OCCURRED!");
+    Serial.println("\n[WARNING] RADIATION SPIKE DETECTED! SEU OCCURRED!");
     Serial.println("System enters infinite loop. Waiting for Watchdog to intervene...");
+    saveTransferState(currentChunkIndex);
     while (true)
     {
       // Infinite loop. WDT will trigger a hardware reboot after 4 seconds.
@@ -212,5 +218,4 @@ void loop()
   }
 
   IWatchdog.reload(); // Kick the dog to reset the 4-second timer
-  delay(500);         // Breathe
 }

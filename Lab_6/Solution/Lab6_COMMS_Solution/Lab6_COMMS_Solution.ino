@@ -35,28 +35,28 @@ HardwareSerial ObcUART(PA12, PA11);
 
 size_t encodeKISS(const uint8_t *payload, size_t payloadSize, uint8_t *outBuffer)
 {
-    size_t outIndex = 0;
-    outBuffer[outIndex++] = FEND;
-    for (size_t i = 0; i < payloadSize; i++)
+  size_t outIndex = 0;
+  outBuffer[outIndex++] = FEND;
+  for (size_t i = 0; i < payloadSize; i++)
+  {
+    uint8_t currentByte = payload[i];
+    if (currentByte == FEND)
     {
-        uint8_t currentByte = payload[i];
-        if (currentByte == FEND)
-        {
-            outBuffer[outIndex++] = FESC;
-            outBuffer[outIndex++] = TFEND;
-        }
-        else if (currentByte == FESC)
-        {
-            outBuffer[outIndex++] = FESC;
-            outBuffer[outIndex++] = TFESC;
-        }
-        else
-        {
-            outBuffer[outIndex++] = currentByte;
-        }
+      outBuffer[outIndex++] = FESC;
+      outBuffer[outIndex++] = TFEND;
     }
-    outBuffer[outIndex++] = FEND;
-    return outIndex;
+    else if (currentByte == FESC)
+    {
+      outBuffer[outIndex++] = FESC;
+      outBuffer[outIndex++] = TFESC;
+    }
+    else
+    {
+      outBuffer[outIndex++] = currentByte;
+    }
+  }
+  outBuffer[outIndex++] = FEND;
+  return outIndex;
 }
 
 // ====================================================================
@@ -64,39 +64,39 @@ size_t encodeKISS(const uint8_t *payload, size_t payloadSize, uint8_t *outBuffer
 // ====================================================================
 void setup()
 {
-    Serial.begin(115200);  // Debug to PC
-    ObcUART.begin(115200); // Communication to OBC
+  Serial.begin(115200);  // Debug to PC
+  ObcUART.begin(115200); // Communication to OBC
 
-    delay(2000);
-    Serial.println("\n=== FlatSat COMMS: Radio Relay Active ===");
+  delay(2000);
+  Serial.println("\n=== FlatSat COMMS: Radio Relay Active ===");
 
-    SPI.setMISO(RADIO_MISO);
-    SPI.setMOSI(RADIO_MOSI);
-    SPI.setSCLK(RADIO_SCK);
-    SPI.begin();
+  SPI.setMISO(RADIO_MISO);
+  SPI.setMOSI(RADIO_MOSI);
+  SPI.setSCLK(RADIO_SCK);
+  SPI.begin();
 
-    Serial.print("[SYSTEM] Initializing RF Module... ");
-    if (radio.beginFSK() == RADIOLIB_ERR_NONE)
-    {
-        radio.setFrequency(433.0);
-        radio.setBitRate(9.6);
-        radio.setOutputPower(2);
-        Serial.println("OK!");
-    }
-    else
-    {
-        Serial.println("FAILED!");
-        while (true)
-            ;
-    }
+  Serial.print("[SYSTEM] Initializing RF Module... ");
+  if (radio.beginFSK() == RADIOLIB_ERR_NONE)
+  {
+    radio.setFrequency(433.0);
+    radio.setBitRate(9.6);
+    radio.setOutputPower(2);
+    Serial.println("OK!");
+  }
+  else
+  {
+    Serial.println("FAILED!");
+    while (true)
+      ;
+  }
 
-    Serial.println("[SYSTEM] Flushing phantom UART data...");
-    delay(500); // รอให้ระบบนิ่งสนิทครึ่งวินาที
-    while (ObcUART.available())
-    {
-        ObcUART.read();
-    }
-    Serial.println("[SYSTEM] System Ready.");
+  Serial.println("[SYSTEM] Flushing phantom UART data...");
+  delay(500); // รอให้ระบบนิ่งสนิทครึ่งวินาที
+  while (ObcUART.available())
+  {
+    ObcUART.read();
+  }
+  Serial.println("[SYSTEM] System Ready.");
 }
 
 // ====================================================================
@@ -104,68 +104,89 @@ void setup()
 // ====================================================================
 void loop()
 {
-    // 1. รอรับข้อมูลดิบจาก OBC (แค่มีเข้ามา 1 ไบต์ก็เริ่มทำงานเลย เพื่อไม่ให้ Buffer ล้น)
-    if (ObcUART.available() > 0)
+  // 1. รอรับเฉพาะ Header ก่อน (ต้องการแค่ 3 Bytes: ChunkID High, ChunkID Low, Length)
+  if (ObcUART.available() >= 3)
+  {
+
+    uint8_t header[3];
+    ObcUART.readBytes(header, 3);
+
+    uint16_t chunkId = (header[0] << 8) | header[1];
+    uint8_t payloadLen = header[2]; // นี่ไง! รู้แล้วว่าก้อนนี้มีรูปกี่ไบต์
+
+    // คำนวณขนาดทั้งหมดที่จะต้องรับเพิ่ม (รูป + Checksum อีก 1)
+    size_t expectedRemaining = payloadLen;
+
+    uint8_t rawPayload[100]; // เตรียม Buffer ไว้ใหญ่ๆ เลย
+
+    // เอา Header ยัดกลับเข้าไปใน Buffer คืน
+    rawPayload[0] = header[0];
+    rawPayload[1] = header[1];
+    rawPayload[2] = header[2];
+
+    // ตั้งเวลารอรับส่วนที่เหลือ
+    ObcUART.setTimeout(250);
+    size_t rxCount = ObcUART.readBytes(&rawPayload[3], expectedRemaining);
+
+    if (rxCount == expectedRemaining)
     {
 
-        uint8_t rawPayload[67]; // 66 bytes data + 1 byte Checksum
+      size_t totalRawSize = 3 + expectedRemaining;
 
-        // ตั้งเวลารอข้อมูลให้มาครบ 66 ไบต์ ภายใน 250 มิลลิวินาที
-        ObcUART.setTimeout(250);
+      // 2. คำนวณ Checksum (XOR) ของข้อมูลทั้งหมด
+      uint8_t checksum = 0;
+      for (size_t i = 0; i < totalRawSize; i++)
+      {
+        checksum ^= rawPayload[i];
+      }
+      rawPayload[totalRawSize] = checksum; // แนบ Checksum ไปที่ตำแหน่งสุดท้าย
 
-        // ทยอยดูดข้อมูลออกจาก Serial Buffer จนครบ 66 ไบต์
-        size_t rxCount = ObcUART.readBytes(rawPayload, 66);
+      // 3. ห่อหุ้มด้วยโปรโตคอล KISS
+      uint8_t txKISSBuffer[150];
+      size_t kissPacketSize = encodeKISS(rawPayload, totalRawSize + 1, txKISSBuffer);
 
-        if (rxCount == 66)
-        {
-            // 2. คำนวณ Checksum (XOR) ของข้อมูล 66 ไบต์
-            uint8_t checksum = 0;
-            for (int i = 0; i < 66; i++)
-            {
-                checksum ^= rawPayload[i];
-            }
-            rawPayload[66] = checksum; // แนบ Checksum ไปที่ตำแหน่งสุดท้าย
+      Serial.print("[RELAY] Encoded Chunk #");
+      Serial.print(chunkId);
+      Serial.print(" (Len: ");
+      Serial.print(payloadLen);
+      Serial.print(") into KISS (");
+      Serial.print(kissPacketSize);
+      Serial.print(" bytes). Transmitting... ");
 
-            // 3. ห่อหุ้มด้วยโปรโตคอล KISS
-            uint8_t txKISSBuffer[135];
-            size_t kissPacketSize = encodeKISS(rawPayload, 67, txKISSBuffer);
+      // 4. ยิงคลื่นวิทยุ
+      // (เราเพิ่มการดักจับ Error ตรงนี้ให้ด้วย จะได้รู้ถ้ายิงไม่สำเร็จ)
+      int txState = radio.transmit(txKISSBuffer, kissPacketSize);
+      if (txState != RADIOLIB_ERR_NONE)
+      {
+        Serial.print("RF Error: ");
+        Serial.println(txState);
+      }
 
-            Serial.print("[RELAY] Encoded Chunk #");
-            uint16_t chunkId = (rawPayload[0] << 8) | rawPayload[1];
-            Serial.print(chunkId);
-            Serial.print(" into KISS (");
-            Serial.print(kissPacketSize);
-            Serial.println(" bytes). Transmitting to Earth...");
+      // 5. รอรับสัญญาณตอบกลับ (ACK)
+      String rfResponse;
+      int rxState = radio.receive(rfResponse, 1000);
 
-            // 4. ยิงคลื่นวิทยุออกสู่สภาวะอวกาศ
-            radio.transmit(txKISSBuffer, kissPacketSize);
+      if (rxState == RADIOLIB_ERR_NONE && rfResponse.indexOf("ACK") >= 0)
+      {
+        Serial.println(" -> Got RF ACK!");
+        ObcUART.println("ACK");
+      }
+      else
+      {
+        Serial.println(" -> RF Timeout/Drop.");
+      }
 
-            // 5. เปิดหูฟัง รอรับสัญญาณตอบกลับ (ACK) จาก Ground Station
-            String rfResponse;
-            int rxState = radio.receive(rfResponse, 1000); // รอพื้นดินตอบ 1 วินาที
-
-            if (rxState == RADIOLIB_ERR_NONE && rfResponse.indexOf("ACK") >= 0)
-            {
-                Serial.println("        -> 🟢 Got RF ACK from Ground Station!");
-                // 6. เมื่อยืนยันว่าถึงโลกอย่างปลอดภัยแล้ว ให้บอก OBC ว่า "ACK"
-                ObcUART.println("ACK");
-            }
-            else
-            {
-                Serial.println("        -> 🔴 RF Timeout / Drop. (Ignoring OBC, forcing retransmit)");
-                // ไม่ส่งอะไรกลับไปให้ OBC เพื่อให้ OBC เกิด Timeout และบังคับส่งซ้ำ
-            }
-            while (ObcUART.available())
-            {
-                ObcUART.read();
-            }
-        }
-        else
-        {
-            // กรณีมาไม่ครบ 66 ไบต์ (เช่นมีสัญญาณกวนในสาย) ให้ล้างข้อมูลขยะทิ้งไป
-            Serial.println("[ERROR] UART Payload fragmented. Flushing buffer.");
-            while (ObcUART.available())
-                ObcUART.read();
-        }
+      // ล้างข้อมูลขยะ (EMI Noise)
+      while (ObcUART.available())
+      {
+        ObcUART.read();
+      }
     }
+    else
+    {
+      Serial.println("[ERROR] UART Payload fragmented. Flushing buffer.");
+      while (ObcUART.available())
+        ObcUART.read();
+    }
+  }
 }
