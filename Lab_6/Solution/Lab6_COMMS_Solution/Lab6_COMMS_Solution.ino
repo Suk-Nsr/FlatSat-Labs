@@ -1,7 +1,8 @@
 /*
  * NBSPACE Labs: FlatSat Learning Set
- * Lab 6: Resilient Downlink (COMMS Relay Module)
- * Architecture: Receives RAW data via UART -> Encodes to KISS -> Transmits via RF -> Waits for RF ACK -> Sends UART ACK
+ * Lab 6: Resilient Downlink & Radio Relay Subsystem
+ * Module: Communication Module (COMMS) - Solution Code
+ * Architecture: Receives dynamic data via UART, computes Checksum, encodes KISS, and transmits over RF.
  */
 
 #include <Arduino.h>
@@ -9,9 +10,8 @@
 #include <RadioLib.h>
 
 // ====================================================================
-// HARDWARE PIN DEFINITIONS
+// HARDWARE PIN DEFINITIONS (COMMS Subsystem - STM32F411RE)
 // ====================================================================
-// Radio SPI Pins (SPI1)
 #define RADIO_SCK PA5
 #define RADIO_MISO PA6
 #define RADIO_MOSI PA7
@@ -22,7 +22,7 @@
 
 SX1278 radio = new Module(RADIO_NSS, RADIO_DIO0, RADIO_RESET, RADIO_DIO1, SPI);
 
-// UART TO OBC MODULE (PA12 = RX, PA11 = TX)
+// --- UART TO OBC MODULE ---
 HardwareSerial ObcUART(PA12, PA11);
 
 // ====================================================================
@@ -64,9 +64,8 @@ size_t encodeKISS(const uint8_t *payload, size_t payloadSize, uint8_t *outBuffer
 // ====================================================================
 void setup()
 {
-  Serial.begin(115200);  // Debug to PC
-  ObcUART.begin(115200); // Communication to OBC
-
+  Serial.begin(115200);  // Debug to PC USB
+  ObcUART.begin(115200); // Inter-board connection
   delay(2000);
   Serial.println("\n=== FlatSat COMMS: Radio Relay Active ===");
 
@@ -80,7 +79,7 @@ void setup()
   {
     radio.setFrequency(433.0);
     radio.setBitRate(9.6);
-    radio.setOutputPower(2);
+    radio.setOutputPower(2); // Reduced power to prevent near-field receiver overload
     Serial.println("OK!");
   }
   else
@@ -90,8 +89,9 @@ void setup()
       ;
   }
 
+  // Purge any power-on startup voltage transients (Phantom Data) from UART line
   Serial.println("[SYSTEM] Flushing phantom UART data...");
-  delay(500); // รอให้ระบบนิ่งสนิทครึ่งวินาที
+  delay(500);
   while (ObcUART.available())
   {
     ObcUART.read();
@@ -104,44 +104,37 @@ void setup()
 // ====================================================================
 void loop()
 {
-  // 1. รอรับเฉพาะ Header ก่อน (ต้องการแค่ 3 Bytes: ChunkID High, ChunkID Low, Length)
+  // 1. Listen for incoming Packet Header (Chunk ID + Payload Length = 3 Bytes)
   if (ObcUART.available() >= 3)
   {
-
     uint8_t header[3];
     ObcUART.readBytes(header, 3);
 
     uint16_t chunkId = (header[0] << 8) | header[1];
-    uint8_t payloadLen = header[2]; // นี่ไง! รู้แล้วว่าก้อนนี้มีรูปกี่ไบต์
+    uint8_t payloadLen = header[2]; // Dynamic payload size parameter
 
-    // คำนวณขนาดทั้งหมดที่จะต้องรับเพิ่ม (รูป + Checksum อีก 1)
-    size_t expectedRemaining = payloadLen;
-
-    uint8_t rawPayload[100]; // เตรียม Buffer ไว้ใหญ่ๆ เลย
-
-    // เอา Header ยัดกลับเข้าไปใน Buffer คืน
+    uint8_t rawPayload[100];
     rawPayload[0] = header[0];
     rawPayload[1] = header[1];
     rawPayload[2] = header[2];
 
-    // ตั้งเวลารอรับส่วนที่เหลือ
+    // 2. Read the remaining expected image block bytes
     ObcUART.setTimeout(250);
-    size_t rxCount = ObcUART.readBytes(&rawPayload[3], expectedRemaining);
+    size_t rxCount = ObcUART.readBytes(&rawPayload[3], payloadLen);
 
-    if (rxCount == expectedRemaining)
+    if (rxCount == payloadLen)
     {
+      size_t totalRawSize = 3 + payloadLen;
 
-      size_t totalRawSize = 3 + expectedRemaining;
-
-      // 2. คำนวณ Checksum (XOR) ของข้อมูลทั้งหมด
+      // 3. Compute error detection Checksum (XOR-8)
       uint8_t checksum = 0;
       for (size_t i = 0; i < totalRawSize; i++)
       {
         checksum ^= rawPayload[i];
       }
-      rawPayload[totalRawSize] = checksum; // แนบ Checksum ไปที่ตำแหน่งสุดท้าย
+      rawPayload[totalRawSize] = checksum; // Append Checksum byte
 
-      // 3. ห่อหุ้มด้วยโปรโตคอล KISS
+      // 4. Encapsulate raw frame inside KISS Protocol encapsulation
       uint8_t txKISSBuffer[150];
       size_t kissPacketSize = encodeKISS(rawPayload, totalRawSize + 1, txKISSBuffer);
 
@@ -151,32 +144,31 @@ void loop()
       Serial.print(payloadLen);
       Serial.print(") into KISS (");
       Serial.print(kissPacketSize);
-      Serial.print(" bytes). Transmitting... ");
+      Serial.print(" bytes). Transmitting to Earth... ");
 
-      // 4. ยิงคลื่นวิทยุ
-      // (เราเพิ่มการดักจับ Error ตรงนี้ให้ด้วย จะได้รู้ถ้ายิงไม่สำเร็จ)
+      // 5. Modulate and transmit telemetry over the space channel
       int txState = radio.transmit(txKISSBuffer, kissPacketSize);
       if (txState != RADIOLIB_ERR_NONE)
       {
         Serial.print("RF Error: ");
-        Serial.println(txState);
+        Serial.print(txState);
       }
 
-      // 5. รอรับสัญญาณตอบกลับ (ACK)
+      // 6. Standby and listen for the Ground Station RF Acknowledge (Stop-and-Wait ARQ)
       String rfResponse;
-      int rxState = radio.receive(rfResponse, 1000);
+      int rxState = radio.receive(rfResponse, 1000); // 1-second downlink window
 
       if (rxState == RADIOLIB_ERR_NONE && rfResponse.indexOf("ACK") >= 0)
       {
-        Serial.println(" -> Got RF ACK!");
-        ObcUART.println("ACK");
+        Serial.println(" -> Got RF ACK from Ground Station!");
+        ObcUART.println("ACK"); // Pass handshake affirmation back to OBC
       }
       else
       {
-        Serial.println(" -> RF Timeout/Drop.");
+        Serial.println(" -> RF Timeout / Drop. (Ignoring OBC, forcing retransmit)");
       }
 
-      // ล้างข้อมูลขยะ (EMI Noise)
+      // Mitigation: Flush any localized EMI feedback loop noise picked up during TX
       while (ObcUART.available())
       {
         ObcUART.read();
