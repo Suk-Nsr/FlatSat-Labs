@@ -1,6 +1,7 @@
 // NBSPACE Labs: FlatSat Learning Set
 // Lab 5.2: GPS-Gating & Orbital Constraints
 // Objective: Learn to evaluate GPS coordinates against a predefined Region of Interest (ROI)
+// Skeleton Code
 
 #include <TinyGPS++.h>
 #include "src/Lab5_TB_GPS_Gating.h"
@@ -41,15 +42,15 @@ void loop() {
       return;
     }
 
-    float currentLat = gps.location.lat();
-    float currentLon = gps.location.lng();
+    // TODO 1: Declare float variables named currentLat and currentLon
+    // Hint: Extract the latitude and longitude values from the TinyGPSPlus object.
 
     bool inTargetArea = false;
 
     // --- Section 2: GPS-Gating Logic ---
-    // TODO 1: Write an if-else condition to check if currentLat and currentLon 
-    // are within the ROI_LAT_MIN, ROI_LAT_MAX and ROI_LON_MIN, ROI_LON_MAX.
-    // If they are inside the area, set inTargetArea to true. Otherwise, false.
+    // TODO 2: Determine if currentLat and currentLon are within the ROI boundaries
+    // Hint: Use an if-else condition checking against ROI_LAT_MIN, ROI_LAT_MAX, ROI_LON_MIN, and ROI_LON_MAX.
+    // Update the inTargetArea boolean variable accordingly.
     
     // [Add your code here]
     
