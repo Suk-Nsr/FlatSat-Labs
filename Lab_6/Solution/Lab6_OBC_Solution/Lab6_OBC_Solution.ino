@@ -136,10 +136,44 @@ void loop()
   // File System Check: Prevent seek overflow and detect mission end boundary
   if ((currentChunkIndex * CHUNK_SIZE) >= imgFile.fileSize())
   {
-    Serial.println("\n[SUCCESS] Entire image transmitted to COMMS successfully!");
-    isTransferComplete = true;
-    sd.remove(STATE_FILE); // Purge state file upon complete download
     imgFile.close();
+
+    // ==================================================================
+    // END OF TRANSMISSION (EOT) SIGNALING
+    // ==================================================================
+    uint8_t eotPacket[3] = {0xFF, 0xFF, 0x00}; // Chunk ID = 0xFFFF, Length = 0
+    
+    Serial.print("[TX] Sending EOT (End of Transmission) flag to COMMS... ");
+    while (CommsUART.available()) { CommsUART.read(); }
+    CommsUART.write(eotPacket, 3);
+    
+    unsigned long startTime = millis();
+    bool gotAck = false;
+    while (millis() - startTime < ACK_TIMEOUT_MS)
+    {
+      if (CommsUART.available())
+      {
+        if (CommsUART.readStringUntil('\n').indexOf("ACK") >= 0)
+        {
+          gotAck = true;
+          break;
+        }
+      }
+    }
+
+    if (gotAck)
+    {
+      Serial.println("OK! (ACK Received)");
+      Serial.println("\n[SUCCESS] Entire image transmitted to Earth successfully!");
+      isTransferComplete = true;
+      sd.remove(STATE_FILE); // Purge state file upon complete download
+    }
+    else
+    {
+      Serial.println("TIMEOUT! Will retry EOT next loop.");
+    }
+
+    IWatchdog.reload();
     return;
   }
 
