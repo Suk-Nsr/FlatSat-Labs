@@ -102,7 +102,7 @@ void loop()
 {
     // ------------------------------------------------------------------
     // TODO 4: CHECK INCOMING UART DATA
-    // Hint: Check if there are at least 3 bytes (Packet Header) available 
+    // Hint: Check if there are at least 3 bytes (Packet Header) available
     // in the ObcUART buffer before reading.
     // ------------------------------------------------------------------
     if (/* --- YOUR CODE HERE --- */)
@@ -212,7 +212,7 @@ void loop()
             // TODO 11: FLUSH FRAGMENTED DATA
             // Hint: Flush the remaining broken data to prepare for the next clean packet.
             // ------------------------------------------------------------------
-            
+
             /* --- YOUR CODE HERE --- */
         }
     }
