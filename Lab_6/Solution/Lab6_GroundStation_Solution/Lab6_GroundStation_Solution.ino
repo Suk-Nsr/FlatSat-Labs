@@ -83,13 +83,13 @@ size_t decodeKISS(const uint8_t *inBuffer, size_t inSize, uint8_t *outBuffer)
   return outIndex;
 }
 
-bool verifyChecksum(const uint8_t *payload, size_t length)
+bool verifyChecksum(const uint8_t *payload, size_t payloadSize)
 {
-  if (length < 2)
+  if (payloadSize < 2)
     return false;
-  uint8_t expectedChecksum = payload[length - 1];
+  uint8_t expectedChecksum = payload[payloadSize - 1];
   uint8_t calculatedChecksum = 0;
-  for (size_t i = 0; i < length - 1; i++)
+  for (size_t i = 0; i < payloadSize - 1; i++)
   {
     calculatedChecksum ^= payload[i];
   }
