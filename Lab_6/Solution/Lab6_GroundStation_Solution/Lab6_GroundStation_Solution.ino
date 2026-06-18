@@ -175,6 +175,7 @@ void loop()
           Serial.println();
 
           // Dispatch stop-and-wait acknowledgement frame to space
+          delay(50);
           radio.transmit("ACK");
         }
         else
