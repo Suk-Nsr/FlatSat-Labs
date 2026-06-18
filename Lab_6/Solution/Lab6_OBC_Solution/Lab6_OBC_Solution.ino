@@ -232,15 +232,11 @@ void loop()
 
   while (millis() - startTime < ACK_TIMEOUT_MS)
   {
-    if (CommsUART.available())
-    {
-      String response = CommsUART.readStringUntil('\n');
-      if (response.indexOf("ACK") >= 0)
-      {
-        gotAck = true;
-        break;
-      }
-    }
+    if (CommsUART.available() && CommsUART.readStringUntil('\n').indexOf("ACK") >= 0)
+        {
+            gotAck = true;
+            break;
+        }
   }
 
   if (gotAck)
