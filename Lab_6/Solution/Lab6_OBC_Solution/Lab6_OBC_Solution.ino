@@ -142,11 +142,14 @@ void loop()
     // END OF TRANSMISSION (EOT) SIGNALING
     // ==================================================================
     uint8_t eotPacket[3] = {0xFF, 0xFF, 0x00}; // Chunk ID = 0xFFFF, Length = 0
-    
+
     Serial.print("[TX] Sending EOT (End of Transmission) flag to COMMS... ");
-    while (CommsUART.available()) { CommsUART.read(); }
+    while (CommsUART.available())
+    {
+      CommsUART.read();
+    }
     CommsUART.write(eotPacket, 3);
-    
+
     unsigned long startTime = millis();
     bool gotAck = false;
     while (millis() - startTime < ACK_TIMEOUT_MS)
@@ -233,10 +236,10 @@ void loop()
   while (millis() - startTime < ACK_TIMEOUT_MS)
   {
     if (CommsUART.available() && CommsUART.readStringUntil('\n').indexOf("ACK") >= 0)
-        {
-            gotAck = true;
-            break;
-        }
+    {
+      gotAck = true;
+      break;
+    }
   }
 
   if (gotAck)
