@@ -30,8 +30,8 @@ HardwareSerial CommsUART(PA1, PA0);
 // MISSION PARAMETERS
 // ====================================================================
 #define CHUNK_SIZE 48          // Optimized payload chunk size (bytes)
-#define ACK_TIMEOUT_MS 2000    // Handshake wait threshold (milliseconds)
-#define WDT_TIMEOUT_US 4000000 // Watchdog hardware trigger (4 seconds)
+#define ACK_TIMEOUT_MS 5000    // Handshake wait threshold (milliseconds)
+#define WDT_TIMEOUT_US 10000000 // Watchdog hardware trigger (10 seconds)
 
 const char *IMAGE_FILE = "photo.jpg";
 const char *STATE_FILE = "state.txt";
@@ -113,7 +113,7 @@ void setup()
     /* --- YOUR CODE HERE --- */
     // IWatchdog.begin( ??? );
 
-    Serial.println("[SYSTEM] Watchdog Timer armed (4 Seconds).");
+    Serial.println("[SYSTEM] Watchdog Timer armed (10 Seconds).");
 }
 
 // ====================================================================
