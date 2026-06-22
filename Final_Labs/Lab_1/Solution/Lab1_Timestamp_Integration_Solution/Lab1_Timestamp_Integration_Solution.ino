@@ -1,18 +1,14 @@
-
 // NBSPACE Labs: FlatSat Learning Set
-// Lab 1.3: Timestamp Integration
+// Lab 1.2: Timestamp Integration
 // Solution Code
 
 #include <Wire.h>
 #include <PCF85063TP.h>
 
-// TODO 1: Initialize the EPS I2C bus with the appropriate SDA and SCL pins
-TwoWire I2C_EPS(???, ???);
+TwoWire I2C_EPS(PF0, PF1);
 PCD85063TP rtc;
 
-// TODO 2: Find the correct I2C address for the TMP102 Temperature Sensor.
-// Replace 0x00 with the correct hexadecimal address (e.g., 0x48, 0x4A, etc.)
-#define TMP102_ADDRESS 0x00
+#define TMP102_ADDRESS 0x49
 
 const int UPLOAD_DELAY_SECONDS = 11;
 
@@ -29,7 +25,7 @@ void syncToCompileTimeWithOffset() {
   while (second >= 60) {
     second -= 60;
     minute++;
-  }
+  } 
 
   while (minute >= 60) {
     minute -= 60;
@@ -64,8 +60,8 @@ void syncToCompileTimeWithOffset() {
   else if (rtc.year == c_year) {
     if (rtc.month < month) needsSync = true;
     else if (rtc.month == month) {
-      if (rtc.dayOfMonth < day) needsSync = true;
-      else if (rtc.dayOfMonth == day) {
+      if (rtc.dayOfMonth < day) needsSync = true;     // FIXED HERE
+      else if (rtc.dayOfMonth == day) {               // FIXED HERE
         if (rtc.hour < hour) needsSync = true;
         else if (rtc.hour == hour) {
           if (rtc.minute <= minute) needsSync = true;
@@ -103,11 +99,9 @@ void syncToCompileTimeWithOffset() {
   rtc.fillByHMS(hour, minute, second);
   rtc.fillDayOfWeek(dow);
 
-  // TODO 3: Write the configured time to the RTC module
-  // [Add your code here]
+  rtc.setTime();
 
-  // TODO 4: Enable the RTC oscillator to start timekeeping
-  // [Add your code here]
+  rtc.startClock();
 
   Serial.println("RTC synced from compile time");
 }
@@ -135,8 +129,7 @@ void setup() {
 
 void loop() {
 
-  // TODO 5: Read the current time data from the RTC module
-  // [Add your code here]
+  rtc.getTime();
 
   int h = rtc.hour;
   int m = rtc.minute;
