@@ -7,6 +7,7 @@ Description: Interfaces with GS board, processes dynamic payloads, and reconstru
 import serial
 import time
 import binascii
+import zlib
 
 # CONFIGURATION: Modify COM port to match your local Ground Station deployment
 COM_PORT = 'COM12' 
@@ -48,6 +49,19 @@ try:
                 # ---------------------------------------------------------
                 if chunk_index == 0xFFFF and payload_len == 0:
                     print("\n[SUCCESS] End of Transmission (EOT) received! Image assembly complete.")
+                    
+                    f.flush()
+                    f.seek(0)
+                    file_data = f.read()
+                    
+                    crc32_hash = zlib.crc32(file_data) & 0xFFFFFFFF
+                    
+                    print("==================================================")
+                    print(f"Final File Size: {len(file_data)} bytes")
+                    print(f"Received CRC32 : {crc32_hash:08X}")
+                    print("==================================================")
+                    print(">> Please compare this CRC32 with the original file! <<")
+                    
                     break # Exit the while loop gracefully to close the file
                 
                 image_bytes = binascii.unhexlify(image_hex)
