@@ -23,7 +23,10 @@ PCD85063TP rtc;
 #define PIN_PAYLOAD_1  PD2
 #define PIN_PAYLOAD_2  PD3
 
-float SAFE_MODE_THRESHOLD = 3.3;
+// --- Safe Mode Thresholds (pre-defined, do not modify) ---
+const float SAFE_MODE_THRESHOLD = 3.36; // Enter safe mode below 30% (~3.36V)
+const float RECOVERY_THRESHOLD  = 3.84; // Exit safe mode above 70% (~3.84V)
+
 bool safeModeTriggered = false;
 
 void setup() {
@@ -108,22 +111,33 @@ void loop() {
   timestamp += ":";
   timestamp += (rtc.second < 10) ? "0" + String(rtc.second) : String(rtc.second);
 
-  // Safe mode decision logic
-  if (busVoltage < SAFE_MODE_THRESHOLD && busVoltage > 0) {
-    Serial.println("LOW VOLTAGE! Entering Safe Mode...");
-    shutdownAllChannels();
-    safeModeTriggered = true;
+  // Safe mode decision logic with hysteresis
+  if (busVoltage > 0 && busVoltage < SAFE_MODE_THRESHOLD) {
+    // LOW VOLTAGE — Enter Safe Mode
+    if (!safeModeTriggered) {
+      Serial.println("LOW VOLTAGE! Entering Safe Mode...");
+      shutdownAllChannels();
+      safeModeTriggered = true;
+    }
+  } else if (safeModeTriggered && busVoltage >= RECOVERY_THRESHOLD) {
+    // VOLTAGE RECOVERED — Exit Safe Mode
+    Serial.println("Voltage recovered! Exiting Safe Mode...");
+    digitalWrite(PIN_COMMS, HIGH);
+    digitalWrite(PIN_PAYLOAD_1, HIGH);
+    digitalWrite(PIN_PAYLOAD_2, HIGH);
+    safeModeTriggered = false;
+    Serial.println("All payloads restored to ACTIVE.");
   } else {
-    // Log nominal state with all telemetry
+    // NOMINAL
     Serial.print("[" + timestamp + "] NOMINAL | ");
-    Serial.print("V:" + String(busVoltage,2) + "V | ");
-    Serial.print("OBC_T:" + String(boardTemp,2) + "C | ");
-    Serial.print("B1_T:" + String(batt1Temp,2) + "C | ");
-    Serial.println("B2_T:" + String(batt2Temp,2) + "C");
+    Serial.print("V:" + String(busVoltage, 2) + "V | ");
+    Serial.print("OBC_T:" + String(boardTemp, 2) + "C | ");
+    Serial.print("B1_T:" + String(batt1Temp, 2) + "C | ");
+    Serial.println("B2_T:" + String(batt2Temp, 2) + "C");
   }
 
   // Run external testbench validations
-  runSafeModeTestbench(busVoltage, boardTemp, safeModeTriggered, SAFE_MODE_THRESHOLD);
+  runSafeModeTestbench(busVoltage, boardTemp, safeModeTriggered);
 
   delay(3000); // Monitoring interval
 }
