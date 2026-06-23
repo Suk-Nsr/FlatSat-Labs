@@ -74,7 +74,6 @@ void syncToCompileTimeWithOffset() {
   }
 
   if (!needsSync) {
-    Serial.println("RTC time is up-to-date. Skipping compile-time sync.");
     return;
   }
 
@@ -108,7 +107,6 @@ void syncToCompileTimeWithOffset() {
   // TODO 4: Enable the RTC oscillator to start timekeeping
   // [Add your code here]
 
-  Serial.println("RTC synced from compile time");
 }
 
 void setup() {
