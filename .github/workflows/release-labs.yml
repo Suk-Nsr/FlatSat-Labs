@@ -29,31 +29,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare and compress Lab Code directories
+      - name: Prepare and compress separate Code and Solution directories
         run: |
           # Create an output directory for the final ZIP files
           mkdir -p output_zips
           
-          # Iterate through all directories matching the pattern 'Lab_*'
-          for lab_dir in Lab_*; do
-            # Check if the 'Code' directory exists inside the Lab folder
-            if [ -d "$lab_dir/Code" ]; then
-              # Extract the lab number
-              LAB_NUM=$(echo "$lab_dir" | grep -o -E '[0-9]+')
-              ZIP_FILENAME="Lab${LAB_NUM}_Code.zip"
-              
-              echo "Zipping contents of $lab_dir/Code into $ZIP_FILENAME..."
-              
-              # Change directory to zip contents directly
-              cd "$lab_dir/Code"
-              
-              # Compress all files and folders, excluding git tracking files
-              zip -r "../../output_zips/$ZIP_FILENAME" ./* -x "*.git*"
-              
-              # Return to the root directory
-              cd -
-            fi
-          done
+          # Process Final_Labs if it exists
+          if [ -d "Final_Labs" ]; then
+            echo "Zipping Final_Labs Code for students..."
+            # Zip only the 'Code' folders inside all Lab directories in Final_Labs
+            zip -r "output_zips/Final_Labs_Code.zip" Final_Labs/*/Code -x "*.git*" || echo "Warning: No Code folders found in Final_Labs"
+            
+            echo "Zipping Final_Labs Solution for teachers..."
+            # Zip only the 'Solution' folders inside all Lab directories in Final_Labs
+            zip -r "output_zips/Final_Labs_Solution.zip" Final_Labs/*/Solution -x "*.git*" || echo "Warning: No Solution folders found in Final_Labs"
+          else
+            echo "Final_Labs directory not found!"
+          fi
+          
+          # Process Full_Labs if it exists
+          if [ -d "Full_Labs" ]; then
+            echo "Zipping Full_Labs Code for students..."
+            # Zip only the 'Code' folders inside all Lab directories in Full_Labs
+            zip -r "output_zips/Full_Labs_Code.zip" Full_Labs/*/Code -x "*.git*" || echo "Warning: No Code folders found in Full_Labs"
+            
+            echo "Zipping Full_Labs Solution for teachers..."
+            # Zip only the 'Solution' folders inside all Lab directories in Full_Labs
+            zip -r "output_zips/Full_Labs_Solution.zip" Full_Labs/*/Solution -x "*.git*" || echo "Warning: No Solution folders found in Full_Labs"
+          else
+            echo "Full_Labs directory not found!"
+          fi
           
           # List generated files for debugging purposes
           ls -lh output_zips/
@@ -63,7 +68,7 @@ jobs:
         with:
           # Use manual tag if triggered manually, otherwise auto-generate tag based on run number
           tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || format('main-build-{0}', github.run_number) }}
-          # Path to the generated ZIP files
+          # Path to all 4 generated ZIP files
           files: output_zips/*.zip
           generate_release_notes: true
 
