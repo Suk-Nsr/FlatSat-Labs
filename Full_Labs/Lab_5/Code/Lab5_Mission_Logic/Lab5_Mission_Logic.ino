@@ -37,6 +37,24 @@ Arducam_Mega myCAM(CAM_CS);
 
 // Power Control Pin for Camera
 const int CAMERA_POWER_PIN = PD4;
+bool isCameraOn = false;
+
+// Image saving variables
+uint8_t imageCount = 0;
+char imageName[13] = { 0 };
+uint8_t imageData = 0;
+uint8_t imageDataNext = 0;
+uint8_t headFlag = 0;
+unsigned int buffIndex = 0;
+uint8_t imageBuff[BUFFER_SIZE] = { 0 };
+
+// --- STM32 ARDUCAM HAL FIX ---
+extern "C" {
+  void arducamCsOutputMode() { pinMode(CAM_CS, OUTPUT); }
+  void arducamSpiCsPinLow() { digitalWrite(CAM_CS, LOW); }
+  void arducamSpiCsPinHigh() { digitalWrite(CAM_CS, HIGH); }
+}
+// -----------------------------
 
 void setup() {
   Serial.setTx(PD8);
@@ -81,11 +99,7 @@ void loop() {
   if (millis() - lastMissionRun > 5000) {
     lastMissionRun = millis();
 
-    if (!gps.location.isValid()) {
-      Serial.println("Waiting for GPS fix...");
-      return;
-    }
-
+    // Directly assign coordinates without checking for a valid fix
     float currentLat = gps.location.lat();
     float currentLon = gps.location.lng();
     
@@ -113,7 +127,48 @@ void loop() {
       rtc.getTime();
       
       // --- CAPTURE & SAVE IMAGE ---
+      Serial.print("Taking picture... ");
       myCAM.takePicture(CAM_IMAGE_MODE_VGA, CAM_IMAGE_PIX_FMT_JPG);
+
+      headFlag = 0;
+      buffIndex = 0;
+      imageData = 0;
+      imageDataNext = 0;
+
+      while (myCAM.getReceivedLength()) {
+        imageData = imageDataNext;
+        imageDataNext = myCAM.readByte();
+
+        if (headFlag == 1) {
+          imageBuff[buffIndex++] = imageDataNext;
+          if (buffIndex >= BUFFER_SIZE) {
+            file.write(imageBuff, buffIndex);
+            buffIndex = 0;
+          }
+        }
+
+        if (imageData == 0xff && imageDataNext == 0xd8) {
+          headFlag = 1;
+          sprintf(imageName, "IMG_%d.JPG", imageCount);
+          imageCount++;
+          if (!file.open(imageName, O_RDWR | O_CREAT | O_TRUNC)) {
+            Serial.println("File open failed!");
+            break;
+          }
+          imageBuff[buffIndex++] = imageData;
+          imageBuff[buffIndex++] = imageDataNext;
+        }
+
+        if (imageData == 0xff && imageDataNext == 0xd9) {
+          headFlag = 0;
+          file.write(imageBuff, buffIndex);
+          buffIndex = 0;
+          file.close();
+          Serial.print("Saved to SD card as: ");
+          Serial.println(imageName);
+          break;
+        }
+      }
       
       // --- METADATA LOGGING ---
       // TODO 4: Open a file named "METADATA.TXT" in Append mode (O_RDWR | O_CREAT | O_APPEND)
@@ -130,6 +185,6 @@ void loop() {
       
     }
 
-    runMissionTestbench(currentLat, currentLon, inTargetArea);
+    runMissionTestbench(currentLat, currentLon, inTargetArea, sd);
   }
 }

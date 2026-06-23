@@ -36,7 +36,7 @@ Arducam_Mega myCAM(CAM_CS);
 #define BUFFER_SIZE 256 // Better alignment for SD Card writes
 
 // Power Control Pin for Payload
-const int CAMERA_POWER_PIN = PD1;
+const int CAMERA_POWER_PIN = PD4;
 bool isCameraOn = false; // Tracks if camera is already powered up
 
 // Image saving variables
@@ -108,11 +108,7 @@ void loop() {
   if (millis() - lastMissionRun > 5000) {
     lastMissionRun = millis();
 
-    if (!gps.location.isValid()) {
-      Serial.println("Waiting for GPS fix...");
-      return;
-    }
-
+    // Directly assign coordinates without checking for a valid fix
     float currentLat = gps.location.lat();
     float currentLon = gps.location.lng();
     
@@ -213,6 +209,6 @@ void loop() {
       }
     }
 
-    runMissionTestbench(currentLat, currentLon, inTargetArea);
+    runMissionTestbench(currentLat, currentLon, inTargetArea, sd);
   }
 }
