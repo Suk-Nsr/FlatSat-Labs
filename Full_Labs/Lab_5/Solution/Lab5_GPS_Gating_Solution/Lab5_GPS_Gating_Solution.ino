@@ -35,11 +35,7 @@ void loop() {
   if (millis() - lastCheck > 2000) {
     lastCheck = millis();
 
-    if (!gps.location.isValid()) {
-      Serial.println("Waiting for GPS fix...");
-      return;
-    }
-
+    // Directly assign coordinates without checking for a valid fix
     float currentLat = gps.location.lat();
     float currentLon = gps.location.lng();
     

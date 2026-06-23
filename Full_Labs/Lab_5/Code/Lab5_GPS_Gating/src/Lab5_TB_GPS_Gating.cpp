@@ -1,7 +1,6 @@
 #include "Lab5_TB_GPS_Gating.h"
 
 void runGPSGatingTestbench(float lat, float lon, bool isInside) {
-  // Testbench validates if the boolean output matches the expected result
   const float ROI_LAT_MIN = 5.61;
   const float ROI_LAT_MAX = 20.46;
   const float ROI_LON_MIN = 97.34;

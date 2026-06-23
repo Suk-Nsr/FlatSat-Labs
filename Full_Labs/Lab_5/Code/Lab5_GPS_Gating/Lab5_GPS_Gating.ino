@@ -37,18 +37,14 @@ void loop() {
   if (millis() - lastCheck > 2000) {
     lastCheck = millis();
 
-    if (!gps.location.isValid()) {
-      Serial.println("Waiting for GPS fix...");
-      return;
-    }
-
-    // TODO 1: Declare float variables named currentLat and currentLon
-    // Hint: Extract the latitude and longitude values from the TinyGPSPlus object.
+    // Directly assign coordinates without checking for a valid fix
+    float currentLat = gps.location.lat();
+    float currentLon = gps.location.lng();
 
     bool inTargetArea = false;
 
     // --- Section 2: GPS-Gating Logic ---
-    // TODO 2: Determine if currentLat and currentLon are within the ROI boundaries
+    // TODO 1: Determine if currentLat and currentLon are within the ROI boundaries
     // Hint: Use an if-else condition checking against ROI_LAT_MIN, ROI_LAT_MAX, ROI_LON_MIN, and ROI_LON_MAX.
     // Update the inTargetArea boolean variable accordingly.
     
