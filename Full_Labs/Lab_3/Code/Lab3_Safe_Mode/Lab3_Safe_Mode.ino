@@ -28,7 +28,10 @@ PCD85063TP rtc;
 
 // -----------------------------------------------
 
-float SAFE_MODE_THRESHOLD = 3.3;
+// --- Safe Mode Thresholds (pre-defined, do not modify) ---
+const float SAFE_MODE_THRESHOLD = 3.36; // Enter safe mode below 30% (~3.36V)
+const float RECOVERY_THRESHOLD  = 3.84; // Exit safe mode above 70% (~3.84V)
+
 bool safeModeTriggered = false;
 
 void setup() {
@@ -116,25 +119,33 @@ void loop() {
   timestamp += ":";
   timestamp += (rtc.second < 10) ? "0" + String(rtc.second) : String(rtc.second);
 
-  // Safe mode decision logic
-  if (busVoltage < SAFE_MODE_THRESHOLD && busVoltage > 0) {
-    Serial.println("LOW VOLTAGE! Entering Safe Mode...");
-    // TODO 3: Call the function to shut down all non-essential channels
-    
-    // [Add your code here]
-    
-    safeModeTriggered = true;
-  } else {
-    // Log nominal state with all telemetry
-    Serial.print("[" + timestamp + "] NOMINAL | ");
-    Serial.print("V:" + String(busVoltage,2) + "V | ");
-    Serial.print("OBC_T:" + String(boardTemp,2) + "C | ");
-    Serial.print("B1_T:" + String(batt1Temp,2) + "C | ");
-    Serial.println("B2_T:" + String(batt2Temp,2) + "C");
-  }
+  // -----------------------------------------------
+  // TODO 3: Implement safe mode logic with hysteresis
+  // Use the pre-defined SAFE_MODE_THRESHOLD and RECOVERY_THRESHOLD constants.
+  //
+  //   if voltage is BELOW SAFE_MODE_THRESHOLD (and not already in safe mode):
+  //     - Print a warning message
+  //     - Call shutdownAllChannels() to disable all payloads
+  //     - Set safeModeTriggered = true
+  //
+  //   else if safe mode IS active AND voltage has RISEN ABOVE RECOVERY_THRESHOLD:
+  //     - Print a recovery message
+  //     - Write HIGH to PIN_COMMS, PIN_PAYLOAD_1, and PIN_PAYLOAD_2
+  //     - Set safeModeTriggered = false
+  //
+  //   else (nominal state):
+  //     - Print the telemetry log line below
+  //
+  // [Add your code here]
+
+  Serial.print("[" + timestamp + "] NOMINAL | ");
+  Serial.print("V:" + String(busVoltage, 2) + "V | ");
+  Serial.print("OBC_T:" + String(boardTemp, 2) + "C | ");
+  Serial.print("B1_T:" + String(batt1Temp, 2) + "C | ");
+  Serial.println("B2_T:" + String(batt2Temp, 2) + "C");
 
   // Run external testbench validations
-  runSafeModeTestbench(busVoltage, boardTemp, safeModeTriggered, SAFE_MODE_THRESHOLD);
+  runSafeModeTestbench(busVoltage, boardTemp, safeModeTriggered);
 
   delay(3000); // Monitoring interval
 }

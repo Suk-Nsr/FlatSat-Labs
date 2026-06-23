@@ -36,7 +36,7 @@ Arducam_Mega myCAM(CAM_CS);
 #define BUFFER_SIZE 0xff
 
 // Power Control Pin for Camera
-const int CAMERA_POWER_PIN = PD4;
+const int CAMERA_POWER_PIN = ???;                   // Fill camera pin here
 bool isCameraOn = false;
 
 // Image saving variables

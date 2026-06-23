@@ -3,6 +3,6 @@
 
 #include <Arduino.h>
 
-void runSafeModeTestbench(float voltage, float temp, bool triggered, float threshold);
+void runSafeModeTestbench(float voltage, float temp, bool triggered);
 
 #endif
