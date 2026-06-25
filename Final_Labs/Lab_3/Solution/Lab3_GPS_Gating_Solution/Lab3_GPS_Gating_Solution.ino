@@ -18,7 +18,7 @@ void setup() {
   Serial.setTx(PD8);
   Serial.setRx(PD9);
   Serial.begin(115200);
-  
+  delay(4000);
   gps_uart.begin(9600);
 
   Serial.println("Lab 3.2: GPS Gating Logic Started");
