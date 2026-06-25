@@ -9,8 +9,8 @@ void runGPSGatingTestbench(float lat, float lon, bool isInside) {
   bool expected = (lat >= ROI_LAT_MIN && lat <= ROI_LAT_MAX && lon >= ROI_LON_MIN && lon <= ROI_LON_MAX);
   
   if (isInside == expected) {
-    Serial.println("[Testbench] ✅ Gating logic is CORRECT.");
+    Serial.println(" 🟢 [PASS] Gating logic is CORRECT.");
   } else {
-    Serial.println("[Testbench] ❌ Gating logic is INCORRECT. Please review your program.");
+    Serial.println(" 🔴 [FAIL] Gating logic is INCORRECT. Please review your program.");
   }
 }
