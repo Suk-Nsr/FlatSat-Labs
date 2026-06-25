@@ -8,6 +8,7 @@ void setup(){
     Serial.setTx(PD8);
     Serial.setRx(PD9);
     Serial.begin(115200);
+    delay(4000);
     Serial.println("Hello from OBC!");
 }
 

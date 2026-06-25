@@ -8,6 +8,7 @@ void setup(){
     Serial.setTx(???);  // Fill pin here
     Serial.setRx(???);  // Fill pin here
     Serial.begin(115200);
+    delay(4000);
     Serial.println("Hello from OBC!");
 }
 
