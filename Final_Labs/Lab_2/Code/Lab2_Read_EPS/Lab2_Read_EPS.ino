@@ -22,7 +22,7 @@ const uint8_t BATT_DIS_ADDR  = ???;                     // Battery discharge pat
 #define INA226_REG_CURRENT     0x04
 #define INA226_REG_CALIBRATION 0x05
 
-#define INA226_CAL_VALUE 5120
+#define INA226_CAL_VALUE 5120 // 0.00512 / (0.1 mA LSB * 0.01 ohm Rsense)
 
 // ---------------------------------------------------------
 // INA226 sensor read/write helpers
