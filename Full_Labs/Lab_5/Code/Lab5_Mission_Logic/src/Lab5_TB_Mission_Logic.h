@@ -4,6 +4,6 @@
 #include <Arduino.h>
 #include "SdFat.h"
 
-void runMissionTestbench(float lat, float lon, bool inTargetArea, SdFs &sd);
+void runMissionTestbench(float lat, float lon, bool inTargetArea, SdFs &sd, int cameraPowerPin, const char *imageName);
 
 #endif

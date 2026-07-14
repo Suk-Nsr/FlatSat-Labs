@@ -1,6 +1,6 @@
 #include "Lab5_TB_Mission_Logic.h"
 
-void runMissionTestbench(float lat, float lon, bool studentInTargetArea, SdFs &sd) {
+void runMissionTestbench(float lat, float lon, bool studentInTargetArea, SdFs &sd, int cameraPowerPin, const char *imageName) {
   const float ROI_LAT_MIN = 5.61;
   const float ROI_LAT_MAX = 20.46;
   const float ROI_LON_MIN = 97.34;
@@ -8,8 +8,8 @@ void runMissionTestbench(float lat, float lon, bool studentInTargetArea, SdFs &s
   
   bool expectedInTargetArea = (lat >= ROI_LAT_MIN && lat <= ROI_LAT_MAX && lon >= ROI_LON_MIN && lon <= ROI_LON_MAX);
   
-  // Check for Power pin state
-  int powerPinState = digitalRead(PD4); // CAMERA_POWER_PIN
+  // Check for Power pin state (use pin provided by caller)
+  int powerPinState = digitalRead(cameraPowerPin);
 
   bool logicCorrect = (studentInTargetArea == expectedInTargetArea);
   bool pinCorrect = false;
@@ -20,7 +20,8 @@ void runMissionTestbench(float lat, float lon, bool studentInTargetArea, SdFs &s
     pinCorrect = true;
   }
 
-  bool isImageSaved = sd.exists("IMG_0.JPG") || sd.exists("0.jpg");
+  // Check for saved image using provided image name (with fallbacks)
+  bool isImageSaved = sd.exists(imageName) || sd.exists("IMG_0.JPG") || sd.exists("0.jpg");
   bool isMetadataSaved = sd.exists("METADATA.TXT");
 
   if (logicCorrect && pinCorrect) {

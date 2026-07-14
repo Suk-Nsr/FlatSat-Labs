@@ -209,6 +209,6 @@ void loop() {
       }
     }
 
-    runMissionTestbench(currentLat, currentLon, inTargetArea, sd);
+    runMissionTestbench(currentLat, currentLon, inTargetArea, sd, CAMERA_POWER_PIN, imageName);
   }
 }
